@@ -1,0 +1,13 @@
+# pacote gerado — reconstruído por `npm run empacotar`
+dist/
+
+node_modules/
+*.log
+
+# cache de ferramentas
+.firecrawl/
+
+# lixo de sistema
+Thumbs.db
+desktop.ini
+.DS_Store

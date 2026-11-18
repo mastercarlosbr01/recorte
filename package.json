@@ -1,0 +1,17 @@
+{
+  "name": "recorte",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Extensão Chrome que exporta a seleção da página como .json, .xml ou .txt já formatado. 100% local.",
+  "scripts": {
+    "test": "node tests/json.test.mjs && node tests/xml.test.mjs && node tests/txt-nome-detectar.test.mjs && node tests/service-worker.test.mjs",
+    "audit": "node scripts/auditar-seguranca.mjs",
+    "check": "npm run test && npm run audit",
+    "icones": "node scripts/gerar-icones.mjs",
+    "empacotar": "node scripts/empacotar.mjs",
+    "icone": "powershell -ExecutionPolicy Bypass -File scripts/converter-icone.ps1 -Origem",
+    "comparar-icones": "powershell -ExecutionPolicy Bypass -File scripts/comparar-icones.ps1 -Pasta",
+    "capturas": "powershell -ExecutionPolicy Bypass -File scripts/montar-capturas.ps1 -Pasta"
+  }
+}

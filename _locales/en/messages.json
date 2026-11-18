@@ -1,0 +1,15 @@
+{
+  "extName": {
+    "message": "Recorte — export selection as a file",
+    "description": "Extension name in the store"
+  },
+  "extDescription": {
+    "message": "Select text, right-click and save it as .json, .xml or .txt, already formatted. 100% local, no network.",
+    "description": "Short store description"
+  },
+  "menuRaiz": { "message": "Export selection" },
+  "menuAuto": { "message": "Automatic" },
+  "menuJson": { "message": ".json" },
+  "menuXml": { "message": ".xml" },
+  "menuTxt": { "message": ".txt" }
+}
