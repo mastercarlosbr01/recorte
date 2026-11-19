@@ -14,6 +14,53 @@ const INDENT = '  ';
 const NOME = /^[A-Za-z_:][A-Za-z0-9._:·-]*/;
 
 /**
+ * Lista de atributos bem formada, pelas regras do XML e não as do HTML.
+ *
+ * O XML exige valor entre aspas e proíbe atributo repetido. `<a t=1>` e
+ * `<a t="1" t="2">` são HTML tolerante, não XML — o DOMParser recusa os
+ * dois.
+ *
+ * Por que isto importa mesmo com o DOMParser confirmando do outro lado: sem
+ * esta checagem, o tokenizador aceitava e o DOMParser recusava, então o
+ * resultado no navegador era .txt e o resultado no teste em Node era .xml.
+ * O usuário não via defeito, e a suíte mentia. Discordância silenciosa
+ * entre o que o teste vê e o que o navegador faz já custou duas rodadas
+ * neste projeto; o tokenizador é a fonte da verdade e precisa valer sozinho.
+ */
+function atributosValidos(resto) {
+  const vistos = new Set();
+  const n = resto.length;
+  let i = 0;
+
+  const pularBrancos = () => { while (i < n && /\s/.test(resto[i])) i++; };
+
+  while (true) {
+    pularBrancos();
+    if (i >= n) return true;
+
+    const m = resto.slice(i).match(NOME);
+    if (!m) return false;
+    if (vistos.has(m[0])) return false;
+    vistos.add(m[0]);
+    i += m[0].length;
+
+    pularBrancos();
+    if (resto[i] !== '=') return false;
+    i++;
+
+    pularBrancos();
+    const aspa = resto[i];
+    if (aspa !== '"' && aspa !== "'") return false;
+    const fecha = resto.indexOf(aspa, i + 1);
+    if (fecha === -1) return false;
+    i = fecha + 1;
+
+    // depois do valor só pode vir espaço ou o fim da tag
+    if (i < n && !/\s/.test(resto[i])) return false;
+  }
+}
+
+/**
  * Quebra o texto em tokens, guardando os offsets de cada um para poder
  * reemitir o trecho original.
  *
@@ -90,8 +137,11 @@ export function tokenizarXML(texto) {
     if (texto.startsWith('</', abre)) {
       const f = fimDaTag(abre + 2);
       if (f === -1) return { erro: 'tag de fechamento não fechada' };
-      const nome = (texto.slice(abre + 2, f).trim().match(NOME) ?? [])[0];
+      // tag de fechamento não tem atributo: `</a foo>` é inválido
+      const dentro = texto.slice(abre + 2, f).trim();
+      const nome = (dentro.match(NOME) ?? [])[0];
       if (!nome) return { erro: 'nome inválido em tag de fechamento' };
+      if (nome !== dentro) return { erro: `lixo na tag de fechamento </${dentro}>` };
       tokens.push({ tipo: 'fechamento', ini: abre, fim: f + 1, nome });
       i = f + 1;
       continue;
@@ -105,6 +155,10 @@ export function tokenizarXML(texto) {
     if (!nome) return { erro: 'nome de elemento inválido' };
 
     const autofechado = corpo.trimEnd().endsWith('/');
+
+    // o que vem depois do nome são os atributos; a barra do autofechado não é
+    const resto = corpo.slice(nome.length).replace(/\/\s*$/, '');
+    if (!atributosValidos(resto)) return { erro: `atributos inválidos em <${nome}>` };
     tokens.push({
       tipo: autofechado ? 'autofechado' : 'abertura',
       ini: abre,

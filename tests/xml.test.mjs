@@ -135,5 +135,47 @@ ok(tipos.includes('declaracao') && tipos.includes('comentario') && tipos.include
 ok(montarArvore('<a>1</a>', tokenizarXML('<a>1</a>').tokens).raiz, 'árvore não foi montada');
 console.log('  OK');
 
+// --------------------------------------------------- atributos, pelo XML
+
+/*
+ * Regressão: o tokenizador aceitava `<a t=1>`, que é HTML tolerante e não
+ * XML. O DOMParser do navegador recusa, então o resultado real era .txt e
+ * o resultado no teste era .xml — a suíte mentia sem ninguém perceber.
+ *
+ * O tokenizador é a fonte da verdade e precisa valer sozinho, sem depender
+ * do voto do DOMParser para chegar à resposta certa.
+ */
+console.log('\n== atributos pelas regras do XML ==');
+
+for (const [nome, xml] of [
+  ['valor sem aspas',            '<a t=1><b/></a>'],
+  ['atributo repetido',          '<a t="1" t="2"/>'],
+  ['atributo sem valor',         '<a checked><b/></a>'],
+  ['aspas não fechadas',         '<a t="1><b/></a>'],
+  ['valor colado no próximo',    '<a t="1"u="2"/>'],
+  ['lixo na tag de fechamento',  '<a>x</a foo>'],
+  ['igual sem nome',             '<a ="1"/>'],
+]) {
+  ok(!formatarXML(xml).ok, `${nome}: deveria ser recusado — o DOMParser recusa`);
+}
+console.log('  OK o que o DOMParser recusa, o tokenizador recusa');
+
+for (const [nome, xml] of [
+  ['aspas duplas',            '<a t="1"><b/></a>'],
+  ['aspas simples',           "<a t='1'><b/></a>"],
+  ['dois atributos',          '<a t="1" u="2"/>'],
+  ['espaço ao redor do =',    '<a t = "1"/>'],
+  ['valor vazio',             '<a t=""/>'],
+  ['maior que dentro do valor', '<a t="x > y"><b/></a>'],
+  ['aspas simples dentro de duplas', `<a t="diz 'oi'"/>`],
+  ['namespace',               '<x:a xmlns:x="u"><x:b/></x:a>'],
+  ['autofechado com espaço',  '<a t="1" />'],
+  ['atributo em outra linha', '<a t="1"\n   u="2"/>'],
+  ['sem atributo nenhum',     '<a><b/></a>'],
+]) {
+  ok(formatarXML(xml).ok, `${nome}: deveria continuar aceito`);
+}
+console.log('  OK nenhum XML legítimo foi recusado');
+
 console.log(falhas === 0 ? '\nTUDO VERDE\n' : `\n${falhas} FALHA(S)\n`);
 process.exit(falhas === 0 ? 0 : 1);
