@@ -35,16 +35,30 @@ const INCLUIR = [
  * acento e espaço, que vira `\\?\...`). readdir + copyFile não tem esse
  * problema e ainda deixa explícito o que entra no pacote.
  */
+/**
+ * Copia para o palco, sem criar pasta vazia.
+ *
+ * A versão anterior criava o diretório antes de saber se havia o que pôr
+ * dentro, e com isso `src/content/` — sobra da extensão anterior, vazia e
+ * nem versionada — entrou no zip como pasta vazia. Não quebra nada, e é
+ * exatamente o tipo de coisa que o revisor abre e pergunta o que é.
+ *
+ * Aqui só arquivo cria diretório, e ele cria apenas o próprio pai.
+ *
+ * @returns {boolean} se algo foi de fato copiado
+ */
 function copiar(origem, destino) {
-  if (statSync(origem).isDirectory()) {
-    mkdirSync(destino, { recursive: true });
-    for (const nome of readdirSync(origem)) {
-      copiar(join(origem, nome), join(destino, nome));
-    }
-  } else {
+  if (!statSync(origem).isDirectory()) {
     mkdirSync(dirname(destino), { recursive: true });
     copyFileSync(origem, destino);
+    return true;
   }
+
+  let copiouAlgo = false;
+  for (const nome of readdirSync(origem)) {
+    if (copiar(join(origem, nome), join(destino, nome))) copiouAlgo = true;
+  }
+  return copiouAlgo;
 }
 
 const manifesto = JSON.parse(readFileSync(join(RAIZ, 'manifest.json'), 'utf8'));
