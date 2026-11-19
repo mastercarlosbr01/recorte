@@ -1,6 +1,6 @@
 ﻿<#
-    Converte uma imagem grande (a que a IA gerou) nos tres tamanhos que a
-    Chrome Web Store exige: 128, 48 e 16.
+    Converte uma imagem grande nos quatro tamanhos que o manifest do
+    Recorte declara: 128, 48, 32 e 16.
 
     Reduzir 1024 -> 16 de uma vez borra tudo. Aqui a reducao e feita em
     etapas, com interpolacao de alta qualidade, que preserva bem mais a
@@ -38,6 +38,10 @@ if ($original.Width -ne $original.Height) {
     Write-Warning "  imagem nao e quadrada - vai distorcer. Recorte antes."
 }
 
+if ($original.Width -lt 512) {
+    Write-Warning "  origem menor que 512px - o de 128 vai sair mole. 512 ou 1024 e o ideal."
+}
+
 function Resize-Etapa {
     param([System.Drawing.Image]$img, [int]$lado)
 
@@ -54,8 +58,8 @@ function Resize-Etapa {
     return $bmp
 }
 
-foreach ($lado in 128, 48, 16) {
-    # reduz em etapas: 1024 -> 256 -> 64 -> 16 preserva forma melhor que um salto so
+foreach ($lado in 128, 48, 32, 16) {
+    # reduz em etapas (1024 -> 256 -> 64 -> 16): preserva a forma muito melhor que um salto so
     $atual = $original
     $temporarios = @()
 
