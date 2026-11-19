@@ -7,8 +7,56 @@
  * mesmo com extensão.
  */
 
-const INVALIDOS = /[\\/:*?"<>|]/g;
-const CONTROLE = /[\u0000-\u001F\u007F]/g;
+/**
+ * O título da página é entrada não confiável: quem escreveu a página
+ * escolhe o que vai nele, e ele vira o nome de um arquivo no disco de quem
+ * instalou a extensão. Três grupos saem fora, por motivos diferentes.
+ *
+ *   Proibidos pelo Windows (\ / : * ? " < > |) e caracteres de controle.
+ *   Sem eles o sistema recusa o nome, ou pior, a barra cria subpasta — o
+ *   `filename` do chrome.downloads.download é um caminho relativo à pasta
+ *   de downloads e aceita subdiretório por projeto.
+ *
+ *   Porcentagem. O Chromium já expandiu variável de ambiente dentro do
+ *   nome de download — %USERNAME% vazando o nome da conta — e também já
+ *   teve o truque "arquivo.lnk.%%", em que remover o %% ressuscitava a
+ *   extensão perigosa anterior. Os dois foram corrigidos lá, mas a
+ *   sanitização do navegador é piso, não teto: o título vem da página e a
+ *   defesa tem que existir aqui também.
+ *
+ *   Marcas de direção de texto (U+200E, U+200F, U+202A–U+202E,
+ *   U+2066–U+2069). Elas invertem a exibição do nome na tela sem mudar os
+ *   bytes: é o truque de fazer "nota-exe.txt" aparecer como
+ *   "nota-txt.exe". Aqui a extensão final é sempre nossa, mas um nome que
+ *   mente para quem está olhando é problema por si só.
+ *
+ * Os pontos de código vão em número, sem sequência de escape: uma barra
+ * invertida escrita como escape já se perdeu uma vez neste projeto e
+ * silenciosamente tirou a barra da lista de proibidos.
+ */
+const PROIBIDOS_WINDOWS = '/:*?"<>|';
+
+function ehCaractereProibido(c) {
+  const n = c.codePointAt(0);
+  return (
+    n <= 0x1f ||                      // controle
+    n === 0x7f ||                     // delete
+    n === 0x25 ||                     // %
+    n === 0x5c ||                     // barra invertida
+    n === 0x200e || n === 0x200f ||   // marcas de direção
+    (n >= 0x202a && n <= 0x202e) ||
+    (n >= 0x2066 && n <= 0x2069) ||
+    PROIBIDOS_WINDOWS.includes(c)
+  );
+}
+
+/** Remove de uma vez tudo que não pode sobreviver ao título. */
+function peneirar(texto) {
+  let saida = '';
+  for (const c of texto) if (!ehCaractereProibido(c)) saida += c;
+  return saida;
+}
+
 const RESERVADOS = /^(con|prn|aux|nul|com[1-9]|lpt[1-9])$/i;
 
 const LIMITE = 60;
@@ -21,9 +69,7 @@ export function dataDeHoje(agora = new Date()) {
 }
 
 export function slugificar(titulo) {
-  const base = String(titulo ?? '')
-    .replace(CONTROLE, '')
-    .replace(INVALIDOS, '')
+  const base = peneirar(String(titulo ?? ''))
     .trim()
     .toLowerCase()
     .replace(/[\s_]+/g, '-')

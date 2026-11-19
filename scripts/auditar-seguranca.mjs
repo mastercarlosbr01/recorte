@@ -69,6 +69,8 @@ const PROIBIDOS = [
     'canal para binário fora do navegador'],
   ['sem cookies de terceiros', /chrome\.cookies/,
     'a extensão não tem motivo para ler cookies'],
+  ['sem mensageria externa', /onMessageExternal|onConnectExternal/,
+    'é por onde outra extensão fala com esta; sem ouvinte, a porta não existe'],
 ];
 
 console.log('\n== fonte ==');
@@ -137,6 +139,19 @@ if (manifesto.host_permissions?.length) {
   falhar('sem host_permissions', 'manifest.json', JSON.stringify(manifesto.host_permissions));
 } else {
   passou('sem host_permissions (activeTab só age no clique do usuário)');
+}
+
+/**
+ * Sem externally_connectable, nenhuma página web alcança esta extensão.
+ * Declarar `matches` abriria isso para as origens listadas — e as mensagens
+ * passariam a chegar de fora, com um remetente que não é mais o próprio
+ * pacote.
+ */
+if (manifesto.externally_connectable) {
+  falhar('sem externally_connectable', 'manifest.json',
+    JSON.stringify(manifesto.externally_connectable));
+} else {
+  passou('sem externally_connectable (nenhuma página web alcança a extensão)');
 }
 
 if (manifesto.content_scripts?.length) {

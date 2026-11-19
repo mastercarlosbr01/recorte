@@ -41,7 +41,13 @@ const TIPO_MIME = {
 /** URLs vivas, para poder revogar depois que o download começa. */
 const urls = new Set();
 
-chrome.runtime.onMessage.addListener((mensagem, _remetente, responder) => {
+chrome.runtime.onMessage.addListener((mensagem, remetente, responder) => {
+  // Mensagem de outra extensão chega em onMessageExternal, não aqui — e
+  // esta extensão não registra aquele ouvinte. Conferir o remetente mesmo
+  // assim custa uma linha e fecha a porta antes dela existir: basta alguém
+  // acrescentar um content script um dia para este listener passar a ser
+  // alcançável a partir de uma página.
+  if (remetente?.id !== chrome.runtime.id) return;
   if (mensagem?.destino !== 'offscreen') return;
 
   if (mensagem.tipo === 'EXPORTAR') {

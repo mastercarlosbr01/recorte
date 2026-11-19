@@ -114,5 +114,80 @@ ok(prepararExportacao('<a>1</a>', 'auto', { confirmarXML: () => false }).extensa
   'veto da checagem extra não chegou ao modo automático');
 console.log('  OK');
 
+// ------------------------------------- título hostil vira nome de arquivo
+
+/*
+ * O título da página é escrito por quem fez a página e vira o nome de um
+ * arquivo no disco de quem instalou a extensão. Os casos abaixo saíram de
+ * problemas que o Chromium já teve na própria determinação do nome de
+ * download, ou de truques conhecidos de nome de arquivo.
+ *
+ * O Chrome também sanitiza. A defesa aqui não é redundante: a sanitização
+ * dele é piso, já teve contorno publicado, e o nome sai daqui antes de
+ * chegar lá.
+ */
+const pc = (n) => String.fromCodePoint(n);
+
+console.log('\n== título hostil ==');
+
+for (const [nome, titulo, proibido] of [
+  ['barra invertida',          'pasta\u005Csub',        pc(0x5c)],
+  ['barra normal',             'pasta/sub',             '/'],
+  ['dois pontos',              'relatorio:final',       ':'],
+  ['fluxo alternativo NTFS',   'nota.txt:oculto.exe',   ':'],
+  ['porcentagem',              'usuario %USERNAME% x',  '%'],
+  ['truque do .lnk.%%',        'arquivo.lnk.%%',        '%'],
+  ['sobrescrita da direita',   'nota-exe' + pc(0x202e) + 'txt', pc(0x202e)],
+  ['isolamento de direção',    'a' + pc(0x2066) + 'b' + pc(0x2069), pc(0x2066)],
+  ['marca da esquerda',        'a' + pc(0x200e) + 'b',  pc(0x200e)],
+]) {
+  const s = slugificar(titulo);
+  ok(!s.includes(proibido), `${nome}: sobrou no nome -> ${JSON.stringify(s)}`);
+}
+console.log('  OK nenhum caractere perigoso sobrevive');
+
+// travessia de caminho: o nome não pode subir pasta nenhuma
+for (const [nome, titulo] of [
+  ['subir uma pasta',      '../segredo'],
+  ['subir várias',         '../../../etc/passwd'],
+  ['barra invertida dupla', '..\u005C..\u005CWindows\u005Csystem32'],
+  ['caminho absoluto',     'C:\u005CWindows\u005CTemp\u005Cx'],
+  ['raiz',                 '/etc/shadow'],
+]) {
+  const n = montarNome(titulo, 'txt');
+  ok(!n.includes('/') && !n.includes(pc(0x5c)), `${nome}: criaria subpasta -> ${JSON.stringify(n)}`);
+  ok(!n.startsWith('.'), `${nome}: nome começa com ponto -> ${JSON.stringify(n)}`);
+}
+console.log('  OK nenhum título sobe de pasta');
+
+// a extensão final é sempre a que o detector decidiu, nunca a do título
+for (const titulo of ['virus.exe', 'script.ps1', 'atalho.lnk', 'a.bat', 'x.scr']) {
+  for (const ext of ['json', 'xml', 'txt']) {
+    const n = montarNome(titulo, ext);
+    ok(n.endsWith('.' + ext), `${titulo} como .${ext} saiu ${n}`);
+    ok((n.match(/\.(exe|ps1|lnk|bat|scr)$/i) ?? []).length === 0,
+      `${n} terminou com extensão executável`);
+  }
+}
+console.log('  OK o título não escolhe a extensão');
+
+// nome reservado do Windows, mesmo disfarçado
+for (const t of ['CON', 'con', 'NUL', 'com1', 'LPT9', 'aux']) {
+  ok(slugificar(t).startsWith('_'), `reservado ${t} passou sem prefixo`);
+}
+ok(!slugificar('console').startsWith('_'), 'console não é reservado e foi prefixado à toa');
+console.log('  OK reservados do Windows');
+
+// título que vira nada não pode gerar nome vazio nem oculto
+for (const t of ['', '   ', '...', '///', '%%%', null, undefined, '-.-.-']) {
+  const n = montarNome(t, 'txt');
+  ok(n.startsWith('selecao_'), `título ${JSON.stringify(t)} virou ${JSON.stringify(n)}`);
+}
+console.log('  OK título vazio cai no nome padrão');
+
+// o que NÃO pode ser removido: acento é legítimo em nome de arquivo
+igual(slugificar('Relatório de Março'), 'relatório-de-março', 'acentuação foi perdida');
+console.log('  OK acentuação preservada');
+
 console.log(falhas === 0 ? '\nTUDO VERDE\n' : `\n${falhas} FALHA(S)\n`);
 process.exit(falhas === 0 ? 0 : 1);
