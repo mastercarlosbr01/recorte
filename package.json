@@ -12,6 +12,7 @@
     "empacotar": "node scripts/empacotar.mjs",
     "icone": "powershell -ExecutionPolicy Bypass -File scripts/converter-icone.ps1 -Origem",
     "comparar-icones": "powershell -ExecutionPolicy Bypass -File scripts/comparar-icones.ps1 -Pasta",
-    "capturas": "powershell -ExecutionPolicy Bypass -File scripts/montar-capturas.ps1 -Pasta"
+    "capturas": "powershell -ExecutionPolicy Bypass -File scripts/montar-capturas.ps1 -Pasta",
+    "promocionais": "powershell -ExecutionPolicy Bypass -File scripts/montar-promocionais.ps1"
   }
 }
