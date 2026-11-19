@@ -7,7 +7,7 @@
  * perde a única cópia que tinha.
  */
 
-import { formatarJSON } from './json.js';
+import { formatarJSON, explicarRecusaJSON } from './json.js';
 import { formatarXML } from './xml.js';
 import { formatarTXT } from './txt.js';
 
@@ -24,7 +24,19 @@ export const MODOS = ['auto', 'json', 'xml', 'txt'];
  */
 export function prepararExportacao(texto, modo = 'auto', opcoes = {}) {
   const { confirmarXML } = opcoes;
-  const cair = (pedido) => ({ ...formatarTXT(texto), extensao: 'txt', atendido: false, pedido });
+
+  /**
+   * O pedido não coube. Além do selo, carrega o motivo: sem ele, "pedi .json
+   * e veio .txt" é indepurável numa página renderizada, onde a causa costuma
+   * ser um caractere que não se vê.
+   */
+  const cair = (pedido) => ({
+    ...formatarTXT(texto),
+    extensao: 'txt',
+    atendido: false,
+    pedido,
+    motivo: pedido === 'json' ? explicarRecusaJSON(texto) : 'XML mal formado ou recusado pelo DOMParser',
+  });
 
   if (modo === 'txt') {
     return { ...formatarTXT(texto), extensao: 'txt', atendido: true, pedido: 'txt' };

@@ -46,7 +46,13 @@ chrome.runtime.onMessage.addListener((mensagem, _remetente, responder) => {
       const url = URL.createObjectURL(blob);
       urls.add(url);
 
-      responder({ url, extensao: r.extensao, atendido: r.atendido, pedido: r.pedido });
+      responder({
+        url,
+        extensao: r.extensao,
+        atendido: r.atendido,
+        pedido: r.pedido,
+        motivo: r.motivo,
+      });
     } catch (erro) {
       responder({ erro: String(erro?.message ?? erro) });
     }

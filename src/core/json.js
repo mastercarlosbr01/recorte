@@ -184,6 +184,43 @@ export function reindentarJSON(texto) {
 }
 
 /**
+ * Por que a validação recusou — uma linha, para o console.
+ *
+ * Quando o tipo pedido não cabe, o usuário vê um selo "TXT" e nada mais. Isso
+ * basta para avisar, e é insuficiente para consertar: numa página renderizada
+ * o motivo costuma ser um caractere invisível, que por definição não aparece.
+ * Sem esta linha, descobrir a causa exige abrir o DevTools do service worker
+ * antes do clique — e o worker dorme e leva o console junto.
+ */
+export function explicarRecusaJSON(texto) {
+  const t = normalizarEspacos(texto).trim();
+  const alvo = t.startsWith('{') || t.startsWith('[') ? t : recortarJSON(t) ?? t;
+
+  let erro = 'nenhum (passou)';
+  try {
+    JSON.parse(alvo);
+  } catch (e) {
+    erro = e.message;
+  }
+
+  const estranhos = new Map();
+  for (const c of texto) {
+    const n = c.codePointAt(0);
+    if (n === 10 || n === 9 || n === 13 || (n >= 32 && n < 127)) continue;
+    const k = 'U+' + n.toString(16).toUpperCase().padStart(4, '0');
+    estranhos.set(k, (estranhos.get(k) ?? 0) + 1);
+  }
+  const fora = [...estranhos].map(([k, n]) => `${k} x${n}`).join(' ');
+
+  return [
+    `JSON.parse: ${erro}`,
+    `tamanho: ${texto.length}`,
+    `início: ${JSON.stringify(texto.slice(0, 60))}`,
+    `fora do ASCII: ${fora || 'nenhum'}`,
+  ].join('\n    ');
+}
+
+/**
  * Recorta sobra em volta do JSON.
  *
  * Seleção de tela frequentemente vem com ruído: "Response: {...}" ou um

@@ -63,7 +63,7 @@ export function criarShim({ idioma = 'pt-BR' } = {}) {
           const r = prepararExportacao(m.texto, m.modo);
           const url = `blob:simulado/${++proximaUrl}`;
           registro.urlsVivas.add(url);
-          return { url, extensao: r.extensao, atendido: r.atendido, pedido: r.pedido };
+          return { url, extensao: r.extensao, atendido: r.atendido, pedido: r.pedido, motivo: r.motivo };
         }
 
         if (m.tipo === 'REVOGAR') {

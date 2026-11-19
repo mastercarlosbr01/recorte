@@ -215,7 +215,16 @@ chrome.contextMenus.onClicked.addListener(async (info, aba) => {
     revogarQuandoTerminar(idDownload, r.url);
 
     // pediu .json ou .xml e saiu .txt: avisa sem pedir permissão nova
-    if (!r.atendido) await sinalizar('TXT', '#b45309');
+    if (!r.atendido) {
+      // console.error de propósito: é o único nível que chega ao botão
+      // "Erros" do cartão em chrome://extensions. O selo diz QUE não coube;
+      // esta linha diz POR QUE, que numa página renderizada costuma ser um
+      // caractere invisível — impossível de descobrir olhando a tela.
+      console.error(
+        `[Recorte] pediu .${r.pedido} e saiu .txt\n    ${r.motivo ?? '(sem motivo)'}`
+      );
+      await sinalizar('TXT', '#b45309');
+    }
   } catch (erro) {
     // console.error, não console.debug: só o error aparece no botão "Erros"
     // do cartão em chrome://extensions. Com debug, a falha fica invisível
