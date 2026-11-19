@@ -134,20 +134,30 @@ function lerSelecaoNaPagina() {
   return { texto: sel ? sel.toString() : '', titulo: document.title };
 }
 
-async function obterSelecao(info, aba) {
+/**
+ * @param {{tabId: number, frameIds?: number[], allFrames?: boolean}} alvo
+ * @param {string} reserva usada só se a injeção falhar
+ *
+ * O alvo muda conforme a origem. Pelo menu de contexto sabe-se o frame
+ * exato do clique. Pelo atalho de teclado não há clique, então varre-se
+ * todos os frames e vale o primeiro com texto — senão uma seleção dentro
+ * de um iframe ficaria invisível.
+ */
+async function obterSelecao(alvo, reserva = '', tituloDaAba = '') {
   try {
-    const [r] = await chrome.scripting.executeScript({
-      target: { tabId: aba.id, frameIds: [info.frameId ?? 0] },
+    const resultados = await chrome.scripting.executeScript({
+      target: alvo,
       func: lerSelecaoNaPagina,
     });
-    if (r?.result?.texto) return r.result;
+    const achado = resultados.find((r) => r?.result?.texto?.trim());
+    if (achado) return achado.result;
   } catch (erro) {
     // páginas chrome://, a Web Store e PDFs recusam injeção
     console.debug('[Recorte]', erro);
   }
 
   // reserva: perde as quebras de linha, mas é melhor que não exportar nada
-  return { texto: info.selectionText ?? '', titulo: aba.title ?? '' };
+  return { texto: reserva, titulo: tituloDaAba };
 }
 
 // ------------------------------------------------------------------ selo
@@ -184,12 +194,16 @@ function revogarQuandoTerminar(idDownload, url) {
 
 // ---------------------------------------------------------------- clique
 
-chrome.contextMenus.onClicked.addListener(async (info, aba) => {
-  const modo = String(info.menuItemId).replace('recorte-', '');
-  if (!MODOS.some((m) => m.id === modo) || !aba?.id) return;
-
+/**
+ * O caminho da exportação, de ponta a ponta.
+ *
+ * Separado do tratador de clique porque o atalho de teclado entra aqui
+ * também: as duas origens diferem só em como a seleção é encontrada, e
+ * duplicar o resto seria duplicar o lugar onde os defeitos moram.
+ */
+async function exportar(modo, aba, buscarSelecao) {
   try {
-    const { texto, titulo } = await obterSelecao(info, aba);
+    const { texto, titulo } = await buscarSelecao();
     if (!texto.trim()) return sinalizar('—', '#64748b');
 
     await garantirOffscreen();
@@ -233,4 +247,45 @@ chrome.contextMenus.onClicked.addListener(async (info, aba) => {
     console.error(`[Recorte] falha ao exportar (modo ${modo}):`, erro);
     await sinalizar('erro', '#dc2626');
   }
+}
+
+// --------------------------------------------------- as duas entradas
+
+chrome.contextMenus.onClicked.addListener((info, aba) => {
+  const modo = String(info.menuItemId).replace('recorte-', '');
+  if (!MODOS.some((m) => m.id === modo) || !aba?.id) return;
+
+  // pelo menu sabe-se o frame exato do clique, e o Chrome ainda oferece
+  // info.selectionText como reserva para quando a injeção é recusada
+  return exportar(modo, aba, () =>
+    obterSelecao(
+      { tabId: aba.id, frameIds: [info.frameId ?? 0] },
+      info.selectionText ?? '',
+      aba.title ?? ''
+    )
+  );
+});
+
+/**
+ * Atalho de teclado: sempre no modo automático.
+ *
+ * Quem usa atalho quer o caminho mais curto; escolher o tipo é justamente
+ * a parte que o menu já resolve bem. Forçar tipo continua sendo coisa de
+ * menu, e por isso o atalho não precisa de variante.
+ *
+ * O gesto de atalho concede activeTab igual ao clique no menu, então não
+ * há permissão nova aqui — nem aviso novo na instalação.
+ */
+chrome.commands.onCommand.addListener(async (comando, aba) => {
+  if (comando !== 'exportar-automatico') return;
+
+  // o Chrome entrega a aba junto do comando; em versão antiga, não
+  const alvo = aba?.id ? aba : (await chrome.tabs.query({ active: true, currentWindow: true }))[0];
+  if (!alvo?.id) return;
+
+  // sem clique não há frame conhecido nem info.selectionText: varre os
+  // frames e fica com o primeiro que tiver seleção
+  return exportar('auto', alvo, () =>
+    obterSelecao({ tabId: alvo.id, allFrames: true }, '', alvo.title ?? '')
+  );
 });

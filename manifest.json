@@ -27,6 +27,15 @@
     "default_title": "Recorte"
   },
 
+  "commands": {
+    "exportar-automatico": {
+      "suggested_key": {
+        "default": "Alt+Shift+E"
+      },
+      "description": "__MSG_comandoExportar__"
+    }
+  },
+
   "icons": {
     "16": "assets/icone-16.png",
     "32": "assets/icone-32.png",

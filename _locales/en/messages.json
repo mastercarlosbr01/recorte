@@ -7,9 +7,23 @@
     "message": "Select text, right-click and save it as .json, .xml or .txt, already formatted. 100% local, no network.",
     "description": "Short store description"
   },
-  "menuRaiz": { "message": "Export selection" },
-  "menuAuto": { "message": "Automatic" },
-  "menuJson": { "message": ".json" },
-  "menuXml": { "message": ".xml" },
-  "menuTxt": { "message": ".txt" }
+  "menuRaiz": {
+    "message": "Export selection"
+  },
+  "menuAuto": {
+    "message": "Automatic"
+  },
+  "menuJson": {
+    "message": ".json"
+  },
+  "menuXml": {
+    "message": ".xml"
+  },
+  "menuTxt": {
+    "message": ".txt"
+  },
+  "comandoExportar": {
+    "message": "Export the selection in automatic mode",
+    "description": "Descrição do atalho, vista em chrome://extensions/shortcuts"
+  }
 }

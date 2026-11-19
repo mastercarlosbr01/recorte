@@ -332,5 +332,93 @@ console.log('\n== o conteúdo chega formatado do outro lado ==');
   console.log('  OK');
 }
 
+// --------------------------------------------------- atalho de teclado
+
+console.log('\n== atalho de teclado ==');
+{
+  const { registro, simular } = await carregar();
+  await simular.instalar();
+  simular.definirPagina(JSON_API, 'Minha API');
+  await simular.atalho();
+
+  igual(registro.downloads.length, 1, 'o atalho deveria exportar');
+  igual(registro.downloads[0].filename, montarNome('Minha API', 'json'),
+    'o atalho deveria usar o modo automático');
+  igual(registro.selos.length, 0, 'sem selo quando deu certo');
+  console.log(`  OK ${registro.downloads[0].filename}`);
+}
+
+console.log('\n== o atalho varre todos os frames ==');
+{
+  // é a diferença que justifica o código separado: pelo menu sabe-se o
+  // frame do clique, pelo atalho não — e uma seleção dentro de iframe
+  // ficaria invisível se só o topo fosse consultado
+  const { registro, simular } = await carregar();
+  await simular.instalar();
+  simular.definirPagina('', 'Portal');          // topo sem seleção
+  simular.definirFrame(1, JSON_API, 'Quadro');  // a seleção está no iframe
+  await simular.atalho();
+
+  igual(registro.execucoes[0]?.allFrames, true,
+    'o atalho deveria injetar em todos os frames, não só no topo');
+  igual(registro.downloads.length, 1, 'deveria achar a seleção dentro do iframe');
+  igual(registro.downloads[0]?.filename, montarNome('Quadro', 'json'),
+    'o título deveria vir do frame que tinha a seleção');
+  console.log('  OK acha seleção em iframe');
+}
+
+console.log('\n== o menu continua mirando o frame do clique ==');
+{
+  // o atalho não pode ter contaminado o caminho do menu
+  const { registro, simular } = await carregar();
+  await simular.instalar();
+  simular.definirPagina('', 'Portal');
+  simular.definirFrame(7, JSON_API, 'Quadro');
+  await simular.clicar('auto', { selectionText: JSON_API, frameId: 7, abaId: 3 });
+
+  igual(registro.execucoes[0]?.allFrames, undefined, 'o menu não deveria varrer frames');
+  igual(registro.execucoes[0]?.frameIds?.[0], 7, 'o menu deveria mirar o frame do clique');
+  igual(registro.downloads.length, 1, 'o menu deveria ter exportado');
+  console.log('  OK');
+}
+
+console.log('\n== atalho sem seleção nenhuma ==');
+{
+  const { registro, simular } = await carregar();
+  await simular.instalar();
+  simular.definirPagina('   ', 'Página');
+  await simular.atalho();
+
+  igual(registro.downloads.length, 0, 'sem texto não se baixa arquivo');
+  igual(registro.selos[0], '—', 'deveria sinalizar vazio');
+  console.log('  OK');
+}
+
+console.log('\n== atalho numa página que recusa injeção ==');
+{
+  const { registro, simular } = await carregar();
+  await simular.instalar();
+  simular.definirPagina('', 'Configurações', /* falhar */ true);
+  await simular.atalho();
+
+  // sem clique não há info.selectionText de reserva: nada a fazer, mas
+  // também nada que quebre
+  igual(registro.downloads.length, 0, 'não há reserva para o atalho');
+  igual(registro.selos[0], '—', 'deveria sinalizar vazio, não erro');
+  console.log('  OK falha sem quebrar');
+}
+
+console.log('\n== comando desconhecido ==');
+{
+  const { registro, simular } = await carregar();
+  await simular.instalar();
+  simular.definirPagina(JSON_API, 'Página');
+  await simular.atalho('outro-comando-qualquer');
+
+  igual(registro.downloads.length, 0, 'comando alheio deveria ser ignorado');
+  igual(registro.execucoes.length, 0, 'não deveria nem injetar');
+  console.log('  OK');
+}
+
 console.log(falhas === 0 ? '\nTUDO VERDE\n' : `\n${falhas} FALHA(S)\n`);
 process.exit(falhas === 0 ? 0 : 1);

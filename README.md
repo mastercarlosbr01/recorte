@@ -14,6 +14,12 @@ Exportar seleção ▸ Automático
 **Automático** decide pelo conteúdo: JSON válido vira `.json` indentado, XML bem
 formado vira `.xml` indentado, o resto vira `.txt` limpo.
 
+**`Alt+Shift+E`** faz o Automático direto, sem passar pelo menu — é o caminho
+curto para quem exporta resposta de API o dia inteiro. Escolher o tipo à força
+continua sendo coisa de menu. O atalho é reconfigurável em
+`chrome://extensions/shortcuts`, e o gesto concede `activeTab` igual ao clique,
+então ele não custa permissão nova.
+
 **Tipo forçado** respeita o pedido quando dá. Se você pedir `.json` num texto que
 não é JSON, o arquivo sai como `.txt` e o ícone acende um selo `TXT` por quatro
 segundos — sem notificação do sistema, sem permissão extra.

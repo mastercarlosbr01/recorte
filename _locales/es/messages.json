@@ -7,9 +7,23 @@
     "message": "Selecciona un texto, haz clic derecho y guárdalo como .json, .xml o .txt ya formateado. 100% local, sin red.",
     "description": "Descripción corta en la tienda"
   },
-  "menuRaiz": { "message": "Exportar selección" },
-  "menuAuto": { "message": "Automático" },
-  "menuJson": { "message": ".json" },
-  "menuXml": { "message": ".xml" },
-  "menuTxt": { "message": ".txt" }
+  "menuRaiz": {
+    "message": "Exportar selección"
+  },
+  "menuAuto": {
+    "message": "Automático"
+  },
+  "menuJson": {
+    "message": ".json"
+  },
+  "menuXml": {
+    "message": ".xml"
+  },
+  "menuTxt": {
+    "message": ".txt"
+  },
+  "comandoExportar": {
+    "message": "Exportar la selección en modo automático",
+    "description": "Descrição do atalho, vista em chrome://extensions/shortcuts"
+  }
 }

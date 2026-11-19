@@ -29,6 +29,7 @@ export function criarShim({ idioma = 'pt-BR' } = {}) {
     onStartup: [],
     onMenuClicked: [],
     onDownloadChanged: [],
+    onCommand: [],
   };
 
   const MENSAGENS = {
@@ -43,8 +44,15 @@ export function criarShim({ idioma = 'pt-BR' } = {}) {
   let temOffscreen = false;
   let proximaUrl = 0;
 
-  /** Controla o que a injeção na página devolve, inclusive falhar. */
-  const pagina = { texto: '', titulo: 'Página', falhar: false };
+  /**
+   * O que a injeção devolve, por frame. O índice é o frameId.
+   *
+   * Importa ter mais de um: pelo menu a extensão injeta no frame exato do
+   * clique, pelo atalho varre todos — e um atalho que só olhasse o topo
+   * não enxergaria seleção dentro de iframe.
+   */
+  const frames = [{ texto: '', titulo: 'Página' }];
+  let injecaoFalha = false;
 
   const disparar = (lista, ...args) => Promise.all(lista.map((f) => f(...args)));
 
@@ -96,12 +104,30 @@ export function criarShim({ idioma = 'pt-BR' } = {}) {
     scripting: {
       async executeScript({ target, func }) {
         registro.execucoes.push(target);
-        if (pagina.falhar) throw new Error('Cannot access contents of the page');
-        // a função roda de verdade não dá: ela depende de document.
+        if (injecaoFalha) throw new Error('Cannot access contents of the page');
+        // rodar a função de verdade não dá: ela depende de document.
         // O que importa aqui é o contrato — o que ela devolveria.
         void func;
-        return [{ result: { texto: pagina.texto, titulo: pagina.titulo } }];
+
+        // allFrames devolve um resultado por frame, na ordem do documento
+        if (target.allFrames) {
+          return frames.map((f) => ({ result: { texto: f.texto, titulo: f.titulo } }));
+        }
+        const id = target.frameIds?.[0] ?? 0;
+        const f = frames[id];
+        if (!f) throw new Error(`No frame with id ${id}`);
+        return [{ result: { texto: f.texto, titulo: f.titulo } }];
       },
+    },
+
+    tabs: {
+      async query() {
+        return [{ id: 1, title: frames[0].titulo }];
+      },
+    },
+
+    commands: {
+      onCommand: { addListener: (f) => ouvintes.onCommand.push(f) },
     },
 
     offscreen: {
@@ -135,11 +161,20 @@ export function criarShim({ idioma = 'pt-BR' } = {}) {
     instalar: () => disparar(ouvintes.onInstalled),
     iniciar: () => disparar(ouvintes.onStartup),
 
-    /** Define o que a página devolveria na injeção. */
+    /** Define o que o frame de topo devolveria na injeção. */
     definirPagina(texto, titulo = 'Página', falhar = false) {
-      pagina.texto = texto;
-      pagina.titulo = titulo;
-      pagina.falhar = falhar;
+      frames[0] = { texto, titulo };
+      injecaoFalha = falhar;
+    },
+
+    /** Acrescenta um frame, como um iframe na página. */
+    definirFrame(id, texto, titulo = 'Quadro') {
+      frames[id] = { texto, titulo };
+    },
+
+    /** Dispara o atalho de teclado. */
+    atalho(comando = 'exportar-automatico', aba = { id: 1, title: frames[0].titulo }) {
+      return disparar(ouvintes.onCommand, comando, aba);
     },
 
     clicar(modo, { selectionText = '', frameId = 0, abaId = 1, titulo = 'Página' } = {}) {
