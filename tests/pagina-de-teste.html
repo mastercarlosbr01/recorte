@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Recorte teste de formatos</title>
+<style>
+  :root {
+    --fundo: #ffffff; --texto: #1e293b; --suave: #64748b;
+    --borda: #e2e8f0; --caixa: #f8fafc; --destaque: #0891b2;
+    --ok: #15803d; --aviso: #b45309;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --fundo: #0f172a; --texto: #e2e8f0; --suave: #94a3b8;
+      --borda: #1e293b; --caixa: #1e293b; --destaque: #22d3ee;
+      --ok: #4ade80; --aviso: #fbbf24;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    background: var(--fundo); color: var(--texto); margin: 0;
+    font: 15px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif;
+    padding: 32px 16px 80px;
+  }
+  main { max-width: 820px; margin: 0 auto; }
+  h1 { font-size: 24px; margin: 0 0 4px; }
+  h1 + p { color: var(--suave); margin: 0 0 32px; }
+  .caso { border: 1px solid var(--borda); border-radius: 10px; margin: 0 0 20px; overflow: hidden; }
+  .cabeca { padding: 12px 16px; background: var(--caixa); border-bottom: 1px solid var(--borda); }
+  .num { color: var(--destaque); font-weight: 700; margin-right: 8px; }
+  .titulo { font-weight: 600; }
+  .espera { display: block; margin-top: 6px; font-size: 13px; color: var(--suave); }
+  .espera b { color: var(--ok); font-weight: 600; }
+  .espera i { color: var(--aviso); font-style: normal; font-weight: 600; }
+  pre {
+    margin: 0; padding: 16px; overflow-x: auto;
+    font: 13px/1.55 ui-monospace, "Cascadia Code", Consolas, monospace;
+    white-space: pre; tab-size: 2;
+  }
+  textarea {
+    width: 100%; min-height: 110px; border: 0; padding: 16px; resize: vertical;
+    background: transparent; color: inherit;
+    font: 13px/1.55 ui-monospace, Consolas, monospace;
+  }
+  iframe { width: 100%; height: 150px; border: 0; display: block; }
+  .nota {
+    border-left: 3px solid var(--destaque); padding: 2px 0 2px 14px;
+    margin: 28px 0; color: var(--suave); font-size: 14px;
+  }
+  kbd {
+    border: 1px solid var(--borda); border-bottom-width: 2px; border-radius: 4px;
+    padding: 1px 5px; font: 12px ui-monospace, monospace; background: var(--caixa);
+  }
+</style>
+</head>
+<body>
+<main>
+
+<h1>Recorte — teste de formatos</h1>
+<p>Selecione o bloco de cada caso, botão direito, <strong>Exportar seleção</strong>.
+Os arquivos saem na pasta Downloads com o nome desta página.</p>
+
+<div class="nota">
+  Antes de começar: <code>chrome://extensions</code> → <kbd>↻</kbd> no cartão do Recorte.
+  Extensão sem compactação não recarrega sozinha, e isso já custou uma rodada hoje.
+</div>
+
+<div class="caso">
+  <div class="cabeca"><span class="num">1</span><span class="titulo">JSON de API, indentado</span>
+    <span class="espera">Automático → <b>.json</b> indentado com 2 espaços</span></div>
+<pre>{
+  "id": 7,
+  "nome": "Ana Ribeiro",
+  "ativo": true,
+  "tags": ["a", "b"],
+  "endereco": { "cidade": "Uberlândia", "uf": "MG" }
+}</pre>
+</div>
+
+<div class="caso">
+  <div class="cabeca"><span class="num">2</span><span class="titulo">JSON em uma linha só</span>
+    <span class="espera">Automático → <b>.json</b>, agora quebrado em linhas</span></div>
+<pre>{"id":7,"nome":"Ana","lista":[1,2,3],"vazio":{},"nulo":null}</pre>
+</div>
+
+<div class="caso">
+  <div class="cabeca"><span class="num">3</span><span class="titulo">O caso que justifica a extensão inteira</span>
+    <span class="espera">Automático → <b>.json</b>. Abra o arquivo e confira: o inteiro gigante
+      tem que sair <b>idêntico</b>, a chave repetida tem que continuar <b>duas vezes</b>,
+      e <code>1.0</code>, <code>1e3</code> e <code>-0</code> não podem virar outra coisa.
+      Qualquer formatador que faça parse e stringify estraga os cinco.</span></div>
+<pre>{
+  "id_grande": 9007199254740993,
+  "a": 1,
+  "a": 2,
+  "decimal": 1.0,
+  "cientifico": 1e3,
+  "zero_negativo": -0,
+  "unicode": "é o mesmo que é?"
+}</pre>
+</div>
+
+<div class="caso">
+  <div class="cabeca"><span class="num">4</span><span class="titulo">JSON cortado no meio</span>
+    <span class="espera">Automático → <b>.txt</b>. Agora force <b>.json</b>: sai .txt,
+      o ícone acende <i>TXT</i> laranja, e o botão <i>Erros</i> do cartão diz o motivo.</span></div>
+<pre>{
+  "id": 7,
+  "nome": "Ana Ribeiro",
+  "end</pre>
+</div>
+
+<div class="caso">
+  <div class="cabeca"><span class="num">5</span><span class="titulo">XML bem formado</span>
+    <span class="espera">Automático → <b>.xml</b> indentado</span></div>
+<pre>&lt;?xml version="1.0" encoding="UTF-8"?&gt;
+&lt;reserva id="4471"&gt;&lt;hospede&gt;&lt;nome&gt;Ana&lt;/nome&gt;&lt;documento tipo="cpf"&gt;000&lt;/documento&gt;&lt;/hospede&gt;&lt;noites&gt;3&lt;/noites&gt;&lt;/reserva&gt;</pre>
+</div>
+
+<div class="caso">
+  <div class="cabeca"><span class="num">6</span><span class="titulo">XML com conteúdo misto</span>
+    <span class="espera">Automático → <b>.xml</b>. O elemento <code>&lt;p&gt;</code> tem que sair
+      <b>literal, byte a byte</b> — ali o espaço antes de <code>&lt;b&gt;</code> é conteúdo,
+      e indentar mudaria o que o documento diz.</span></div>
+<pre>&lt;doc&gt;&lt;titulo&gt;Aviso&lt;/titulo&gt;&lt;p&gt;Olá &lt;b&gt;mundo&lt;/b&gt;, tudo &lt;i&gt;bem&lt;/i&gt;?&lt;/p&gt;&lt;/doc&gt;</pre>
+</div>
+
+<div class="caso">
+  <div class="cabeca"><span class="num">7</span><span class="titulo">XML com namespace, CDATA, comentário e entidade</span>
+    <span class="espera">Automático → <b>.xml</b>. Confira que o prefixo <code>x:</code> não foi
+      reescrito, o CDATA saiu inteiro e <code>&amp;amp;</code> continua escrito assim,
+      sem virar <code>&amp;</code>.</span></div>
+<pre>&lt;x:raiz xmlns:x="http://exemplo/ns"&gt;&lt;!-- nota --&gt;&lt;x:item&gt;a &amp;amp; b&lt;/x:item&gt;&lt;x:bruto&gt;&lt;![CDATA[ if (a &lt; b &amp;&amp; c &gt; d) {} ]]&gt;&lt;/x:bruto&gt;&lt;/x:raiz&gt;</pre>
+</div>
+
+<div class="caso">
+  <div class="cabeca"><span class="num">8</span><span class="titulo">XML com atributo sem aspas</span>
+    <span class="espera">Automático → <b>.txt</b>. Isto é HTML tolerante, não XML —
+      a norma exige aspas. Era o único ponto em que o meu validador discordava
+      do navegador; foi corrigido agora.</span></div>
+<pre>&lt;a t=1&gt;&lt;b/&gt;&lt;/a&gt;</pre>
+</div>
+
+<div class="caso">
+  <div class="cabeca"><span class="num">9</span><span class="titulo">XML mal formado</span>
+    <span class="espera">Automático → <b>.txt</b>. Force <b>.xml</b>: sai .txt e acende <i>TXT</i>.</span></div>
+<pre>&lt;a&gt;&lt;b&gt;um&lt;/a&gt;&lt;/b&gt;</pre>
+</div>
+
+<div class="caso">
+  <div class="cabeca"><span class="num">10</span><span class="titulo">Texto comum</span>
+    <span class="espera">Automático → <b>.txt</b>, <b>sem</b> selo. Texto não é falha.</span></div>
+<pre>Reunião de quinta às 14h. Confirmar a sala com o Paulo
+e levar o relatório impresso.</pre>
+</div>
+
+<div class="caso">
+  <div class="cabeca"><span class="num">11</span><span class="titulo">Código indentado</span>
+    <span class="espera">Automático → <b>.txt</b> com a <b>indentação intacta</b>.
+      A linha em branco dupla também tem que sobreviver.</span></div>
+<pre>def processar(itens):
+    total = 0
+    for i in itens:
+        if i &gt; 0:
+            total += i
+
+    return total</pre>
+</div>
+
+<div class="caso">
+  <div class="cabeca"><span class="num">12</span><span class="titulo">Campo de formulário</span>
+    <span class="espera">Clique dentro, <kbd>Ctrl</kbd>+<kbd>A</kbd>, Automático → <b>.json</b>.
+      Dentro de <code>&lt;textarea&gt;</code> o <code>getSelection()</code> volta vazio;
+      a extensão lê por <code>selectionStart</code>. Caminho diferente do resto.</span></div>
+  <textarea spellcheck="false">{
+  "origem": "campo de formulario",
+  "quebras": "precisam sobreviver"
+}</textarea>
+</div>
+
+<div class="caso">
+  <div class="cabeca"><span class="num">13</span><span class="titulo">Seleção dentro de um iframe</span>
+    <span class="espera">Automático → <b>.json</b>. Testa se a injeção vai no frame do clique
+      e não no topo. Se for no topo, a seleção lida é a errada.</span></div>
+  <iframe title="quadro interno" srcdoc='&lt;style&gt;body{font:13px ui-monospace,Consolas,monospace;margin:16px;color:%23334155}@media(prefers-color-scheme:dark){body{background:%231e293b;color:%23e2e8f0}}&lt;/style&gt;&lt;pre&gt;{
+  "de": "dentro do iframe",
+  "frame": 1
+}&lt;/pre&gt;'></iframe>
+</div>
+
+<div class="nota">
+  <strong>Os dois últimos não têm bloco, são navegação:</strong><br>
+  <strong>14.</strong> Abra <code>chrome://settings</code>, selecione qualquer texto, botão direito.
+  O menu do Recorte <strong>não deve nem aparecer</strong>.<br>
+  <strong>15.</strong> Clique duas vezes seguidas, rápido, em qualquer caso acima.
+  Dois arquivos, nenhum erro — só pode existir um documento offscreen.
+</div>
+
+<div class="nota">
+  Enquanto testa, vale deixar <code>chrome://extensions</code> aberto numa aba.
+  Qualquer falha de verdade aparece no botão <strong>Erros</strong> do cartão,
+  com o motivo — sem precisar de DevTools.
+</div>
+
+</main>
+</body>
+</html>
