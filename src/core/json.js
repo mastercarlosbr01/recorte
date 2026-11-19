@@ -16,6 +16,72 @@
 
 const INDENT = '  ';
 
+/**
+ * Invisíveis que o JSON não aceita como espaçamento.
+ *
+ * A norma admite exatamente quatro: espaço, tabulação, LF e CR. Qualquer
+ * outro caractere invisível reprova no `JSON.parse`, por mais que a tela o
+ * desenhe idêntico a um espaço comum.
+ *
+ * Isso não é teórico. O visualizador de JSON embutido no Chrome indenta com
+ * espaço não separável (U+00A0), então copiar um JSON de resposta de API —
+ * o caso de uso central desta extensão — produz um texto que parece JSON,
+ * é JSON aos olhos de qualquer pessoa, e reprova na validação. Páginas
+ * renderizadas em geral também carregam U+200B, U+FEFF e parentes.
+ *
+ * A faixa 0x2000-0x200D cobre de uma vez os espaços tipográficos e os de
+ * largura zero (0x200B, 0x200C, 0x200D), que `\s` não pega.
+ */
+function ehInvisivelForaDoJSON(c) {
+  const n = c.codePointAt(0);
+  return (
+    n === 0x00a0 || // espaço não separável — o do visualizador do Chrome
+    n === 0x1680 || // espaço ogham
+    (n >= 0x2000 && n <= 0x200d) || // espaços tipográficos e os de largura zero
+    n === 0x2028 || // separador de linha
+    n === 0x2029 || // separador de parágrafo
+    n === 0x202f || // espaço não separável estreito
+    n === 0x205f || // espaço matemático médio
+    n === 0x2060 || // juntador de palavras
+    n === 0x3000 || // espaço ideográfico
+    n === 0xfeff    // BOM / espaço não separável de largura zero
+  );
+}
+
+/**
+ * Troca por espaço comum os invisíveis que só atrapalham — SÓ FORA DAS ASPAS.
+ *
+ * A ressalva é o ponto inteiro desta função. Dentro de uma string, U+00A0 é
+ * conteúdo: trocá-lo alteraria o dado do usuário, que é exatamente o que
+ * este módulo existe para nunca fazer. Fora das aspas ele é só espaçamento,
+ * e o espaçamento vai ser refeito pela reindentação de qualquer maneira.
+ */
+export function normalizarEspacos(texto) {
+  let saida = '';
+  let dentroString = false;
+  let escapado = false;
+
+  for (const c of texto) {
+    if (dentroString) {
+      saida += c;
+      if (escapado) escapado = false;
+      else if (c === '\\') escapado = true;
+      else if (c === '"') dentroString = false;
+      continue;
+    }
+
+    if (c === '"') {
+      dentroString = true;
+      saida += c;
+      continue;
+    }
+
+    saida += ehInvisivelForaDoJSON(c) ? ' ' : c;
+  }
+
+  return saida;
+}
+
 /** Só valida. O resultado do parse é descartado de propósito. */
 export function ehJSONValido(texto) {
   try {
@@ -149,7 +215,9 @@ export function recortarJSON(texto) {
  * acerta.
  */
 export function formatarJSON(texto) {
-  const limpo = texto.trim();
+  // Normalizar ANTES de validar. O JSON.parse é a única autoridade sobre
+  // "isto é JSON", e ele reprova invisíveis que a tela mostra como espaço.
+  const limpo = normalizarEspacos(texto).trim();
 
   const tentar = (candidato) => {
     if (!candidato) return null;

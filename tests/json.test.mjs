@@ -7,7 +7,7 @@
  *
  * Rodar: node tests/json.test.mjs
  */
-import { formatarJSON, reindentarJSON, ehJSONValido, recortarJSON } from '../src/core/json.js';
+import { formatarJSON, reindentarJSON, ehJSONValido, recortarJSON, normalizarEspacos } from '../src/core/json.js';
 
 let falhas = 0;
 function ok(condicao, mensagem) {
@@ -165,6 +165,74 @@ for (const entrada of [
   igual(tokens(r.texto), tokens(entrada), 'conteúdo alterado além do espaçamento');
 }
 console.log('  OK só o espaçamento mudou');
+
+// ------------------------------------------------- invisíveis que não são espaço
+
+/*
+ * Regressão de um defeito real, achado em uso.
+ *
+ * O visualizador de JSON do Chrome indenta com espaço não separável. Copiar
+ * um JSON de resposta de API — o caso de uso central da extensão — produzia
+ * um texto que é JSON para qualquer leitor humano e reprovava no
+ * `JSON.parse`. Resultado: o modo automático salvava .txt, e pedir .json
+ * explicitamente também caía para .txt.
+ *
+ * O diagnóstico veio do arquivo que o usuário baixou: ele continha JSON
+ * válido, mas tinha sido salvo como .txt. Entre as regras de limpeza do TXT,
+ * a troca de U+00A0 por espaço é a única capaz de virar o resultado de uma
+ * validação de JSON — as outras mexem só em quebra de linha e espaço comum,
+ * que o JSON já aceita. Por eliminação, o culpado era U+00A0.
+ *
+ * Os caracteres são escritos por código numérico de propósito: invisível em
+ * literal de fonte é como o defeito nasceu.
+ */
+const cp = (n) => String.fromCodePoint(n);
+const NBSP = cp(0x00a0);
+
+console.log('\n== invisíveis que não são espaço de JSON ==');
+
+const indentadoComNbsp = `{\n${NBSP}${NBSP}"id": 1,\n${NBSP}${NBSP}"nome": "Ana"\n}`;
+ok(!ehJSONValido(indentadoComNbsp), 'premissa do teste: JSON.parse deveria recusar U+00A0 cru');
+const rNbsp = formatarJSON(indentadoComNbsp);
+ok(rNbsp.ok, 'JSON indentado com espaço não separável deveria ser aceito');
+ok(ehJSONValido(rNbsp.texto), 'a saída deveria ser JSON válido');
+console.log('  OK indentação com U+00A0 (o caso do visualizador do Chrome)');
+
+for (const [nome, n] of [
+  ['espaço de largura zero', 0x200b],
+  ['BOM / ZWNBSP', 0xfeff],
+  ['espaço fino', 0x2009],
+  ['espaço ideográfico', 0x3000],
+  ['separador de linha', 0x2028],
+  ['espaço não separável estreito', 0x202f],
+  ['juntador de palavras', 0x2060],
+]) {
+  const ch = cp(n);
+  const codigo = 'U+' + n.toString(16).toUpperCase().padStart(4, '0');
+  ok(formatarJSON(`{${ch}"a":${ch}1${ch}}`).ok, `${nome} (${codigo}) fora das aspas deveria ser tolerado`);
+}
+ok(formatarJSON(cp(0xfeff) + '{"a":1}').ok, 'BOM antes do primeiro { deveria ser tolerado');
+console.log('  OK a família inteira de invisíveis, fora das aspas');
+
+// o ponto delicado: dentro das aspas esses caracteres são DADO
+const zwsp = cp(0x200b);
+const dentroDasAspas = `{"texto": "a${NBSP}b", "zero": "x${zwsp}y"}`;
+const rDentro = formatarJSON(dentroDasAspas);
+ok(rDentro.ok, 'deveria aceitar invisíveis dentro de string');
+ok(rDentro.texto.includes(`a${NBSP}b`), 'U+00A0 DENTRO da string foi trocado — isso é alterar o dado');
+ok(rDentro.texto.includes(`x${zwsp}y`), 'U+200B DENTRO da string foi trocado — isso é alterar o dado');
+console.log('  OK dentro das aspas nada é tocado');
+
+// aspas escapadas não podem confundir o rastreamento de estado
+const comEscape = `{"a": "diz \\"${NBSP}oi\\" aqui",${NBSP}"b": 2}`;
+const rEscape = formatarJSON(comEscape);
+ok(rEscape.ok, 'deveria aceitar aspas escapadas com invisível dentro');
+ok(rEscape.texto.includes(`\\"${NBSP}oi\\"`), 'o U+00A0 dentro da string escapada foi alterado');
+console.log('  OK aspas escapadas não confundem o estado');
+
+igual(normalizarEspacos(`{${NBSP}"a":1}`), '{ "a":1}', 'fora das aspas vira espaço comum');
+igual(normalizarEspacos(`{"a":"${NBSP}"}`), `{"a":"${NBSP}"}`, 'dentro das aspas fica intacto');
+console.log('  OK normalizarEspacos isolado');
 
 console.log(falhas === 0 ? '\nTUDO VERDE\n' : `\n${falhas} FALHA(S)\n`);
 process.exit(falhas === 0 ? 0 : 1);
