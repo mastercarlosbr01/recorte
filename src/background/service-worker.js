@@ -84,24 +84,57 @@ chrome.runtime.onStartup.addListener(montarMenu);
 
 let criandoOffscreen = null;
 
+const ESPERA_MS = 25;
+const TENTATIVAS = 20; // meio segundo no total, de sobra para um documento vazio
+
+/**
+ * Espera o documento RESPONDER, não só existir.
+ *
+ * `offscreen.js` é carregado como módulo, e módulo é deferido: quando a
+ * promessa de `createDocument()` resolve, o documento existe mas o
+ * `onMessage` dele pode ainda não estar registrado. A mensagem que chega
+ * nessa janela rejeita na hora com "Could not establish connection", que
+ * cai no catch do clique e acende o selo de erro — uma falha intermitente,
+ * que só aparece em início frio e some quando se tenta reproduzir.
+ *
+ * Perguntar e esperar a resposta troca uma suposição por um fato.
+ */
+async function esperarResposta() {
+  for (let i = 0; i < TENTATIVAS; i++) {
+    try {
+      const r = await chrome.runtime.sendMessage({ destino: 'offscreen', tipo: 'PING' });
+      if (r?.pronto) return;
+    } catch {
+      // ainda não há ouvinte do outro lado; é o caso esperado aqui
+    }
+    await new Promise((resolve) => setTimeout(resolve, ESPERA_MS));
+  }
+  throw new Error('o documento offscreen não respondeu a tempo');
+}
+
 async function garantirOffscreen() {
-  if (await chrome.offscreen.hasDocument()) return;
-  // dois cliques seguidos não podem tentar criar dois documentos
-  criandoOffscreen ??= chrome.offscreen
-    .createDocument({
-      url: OFFSCREEN,
-      reasons: ['DOM_PARSER', 'BLOBS'],
-      justification:
-        'Validar XML com DOMParser e gerar o arquivo da seleção como blob; o service worker não tem DOM.',
-    })
-    .catch((erro) => {
-      // outra chamada pode ter criado nesse meio-tempo
-      if (!String(erro).includes('Only a single offscreen')) throw erro;
-    })
-    .finally(() => {
-      criandoOffscreen = null;
-    });
-  await criandoOffscreen;
+  if (!(await chrome.offscreen.hasDocument())) {
+    // dois cliques seguidos não podem tentar criar dois documentos
+    criandoOffscreen ??= chrome.offscreen
+      .createDocument({
+        url: OFFSCREEN,
+        reasons: ['DOM_PARSER', 'BLOBS'],
+        justification:
+          'Validar XML com DOMParser e gerar o arquivo da seleção como blob; o service worker não tem DOM.',
+      })
+      .catch((erro) => {
+        // outra chamada pode ter criado nesse meio-tempo
+        if (!String(erro).includes('Only a single offscreen')) throw erro;
+      })
+      .finally(() => {
+        criandoOffscreen = null;
+      });
+    await criandoOffscreen;
+  }
+
+  // o documento existir não basta: o segundo clique também pode chegar
+  // enquanto o script do primeiro ainda está carregando
+  await esperarResposta();
 }
 
 // -------------------------------------------------------------- seleção

@@ -50,6 +50,18 @@ chrome.runtime.onMessage.addListener((mensagem, remetente, responder) => {
   if (remetente?.id !== chrome.runtime.id) return;
   if (mensagem?.destino !== 'offscreen') return;
 
+  /*
+   * Responder ao PING é o que torna o aperto de mão possível. Este arquivo
+   * é carregado como módulo, e módulo é deferido: quando a promessa de
+   * createDocument() resolve, o documento existe mas este ouvinte pode
+   * ainda não ter sido registrado. Quem pergunta espera a resposta em vez
+   * de supor que ela viria.
+   */
+  if (mensagem.tipo === 'PING') {
+    responder({ pronto: true });
+    return true;
+  }
+
   if (mensagem.tipo === 'EXPORTAR') {
     try {
       const r = prepararExportacao(mensagem.texto, mensagem.modo, { confirmarXML });

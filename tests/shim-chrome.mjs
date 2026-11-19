@@ -44,6 +44,8 @@ export function criarShim({ idioma = 'pt-BR' } = {}) {
 
   let ultimoErro = null;
   let temOffscreen = false;
+  let offscreenPronto = false;
+  let demoraDoOffscreen = 0;
   let proximaUrl = 0;
 
   /**
@@ -70,8 +72,16 @@ export function criarShim({ idioma = 'pt-BR' } = {}) {
       async sendMessage(m) {
         if (m?.destino !== 'offscreen') return undefined;
 
+        // Enquanto o script do documento não rodou não há ouvinte, e o
+        // Chrome devolve exatamente este erro. É a janela que o aperto de
+        // mão existe para cobrir.
+        if (!temOffscreen || !offscreenPronto) {
+          throw new Error('Could not establish connection. Receiving end does not exist.');
+        }
+
+        if (m.tipo === 'PING') return { pronto: true };
+
         if (m.tipo === 'EXPORTAR') {
-          if (!temOffscreen) throw new Error('offscreen não existe');
           const r = prepararExportacao(m.texto, m.modo);
           const url = `blob:simulado/${++proximaUrl}`;
           registro.urlsVivas.add(url);
@@ -140,6 +150,12 @@ export function criarShim({ idioma = 'pt-BR' } = {}) {
         if (temOffscreen) throw new Error('Only a single offscreen document may be created');
         temOffscreen = true;
         registro.offscreenCriados++;
+        if (demoraDoOffscreen > 0) {
+          offscreenPronto = false;
+          setTimeout(() => { offscreenPronto = true; }, demoraDoOffscreen);
+        } else {
+          offscreenPronto = true;
+        }
       },
     },
 
@@ -176,6 +192,9 @@ export function criarShim({ idioma = 'pt-BR' } = {}) {
     definirFrame(id, texto, titulo = 'Quadro') {
       frames[id] = { texto, titulo };
     },
+
+    /** Quanto tempo o documento leva para registrar o ouvinte. */
+    offscreenDemora(ms) { demoraDoOffscreen = ms; },
 
     /** Dispara o atalho de teclado. */
     /** Clique no ícone da barra de ferramentas. */

@@ -12,11 +12,15 @@
 import { criarShim } from './shim-chrome.mjs';
 import { montarNome } from '../src/core/nome.js';
 
+// guardado antes de qualquer desvio: é por aqui que falha de teste sai,
+// e ela não pode cair no mesmo balde que os erros esperados do worker
+const gritar = console.error.bind(console);
+
 let falhas = 0;
 function ok(condicao, mensagem) {
   if (condicao) return;
   falhas++;
-  console.error(`  FALHOU: ${mensagem}`);
+  gritar(`  FALHOU: ${mensagem}`);
 }
 function igual(obtido, esperado, mensagem) {
   ok(obtido === esperado,
@@ -48,7 +52,9 @@ const esperar = () => new Promise((r) => setTimeout(r, 0));
  * o que interessa é só que a mensagem existiu — então ela vira verificação.
  */
 const registrado = [];
-console.debug = (...args) => registrado.push(args.map(String).join(' '));
+const coletar = (...args) => registrado.push(args.map(String).join(' '));
+console.debug = coletar;
+console.error = coletar;
 
 const JSON_API = '{"id":7,"nome":"Ana","ativo":true}';
 const XML_NOTA = '<nota><para>Ana</para><corpo>oi</corpo></nota>';
@@ -418,6 +424,73 @@ console.log('\n== comando desconhecido ==');
   igual(registro.downloads.length, 0, 'comando alheio deveria ser ignorado');
   igual(registro.execucoes.length, 0, 'não deveria nem injetar');
   console.log('  OK');
+}
+
+// ------------------------------------------- a corrida do offscreen
+
+console.log('\n== documento offscreen que demora a responder ==');
+{
+  /*
+   * A corrida de verdade: offscreen.js é módulo, e módulo é deferido.
+   * Quando createDocument() resolve, o documento existe mas o onMessage
+   * dele pode não estar registrado. A mensagem que chega nessa janela
+   * rejeita com "Could not establish connection" — falha intermitente, que
+   * só aparece em início frio e some quando se tenta reproduzir.
+   */
+  const { registro, simular } = await carregar();
+  await simular.instalar();
+  simular.definirPagina(JSON_API, 'Minha API');
+  simular.offscreenDemora(120);
+
+  const t0 = Date.now();
+  await simular.clicar('auto', { selectionText: JSON_API, titulo: 'Minha API' });
+  const levou = Date.now() - t0;
+
+  igual(registro.downloads.length, 1, 'deveria exportar mesmo com o documento lento');
+  igual(registro.selos.length, 0, 'não deveria acender selo de erro');
+  ok(levou >= 100, `deveria ter esperado o documento responder (levou ${levou}ms)`);
+  console.log(`  OK esperou ${levou}ms e exportou`);
+}
+
+console.log('\n== segundo clique enquanto o primeiro ainda carrega ==');
+{
+  // o caso que o hasDocument() sozinho não cobre: o documento já existe,
+  // criado pelo primeiro clique, mas o script dele ainda não rodou
+  const { registro, simular } = await carregar();
+  await simular.instalar();
+  simular.definirPagina(JSON_API, 'Página');
+  simular.offscreenDemora(80);
+
+  await Promise.all([
+    simular.clicar('auto', { selectionText: JSON_API }),
+    simular.clicar('json', { selectionText: JSON_API }),
+  ]);
+
+  igual(registro.offscreenCriados, 1, 'só pode existir um documento offscreen');
+  igual(registro.downloads.length, 2, 'os dois cliques deveriam ter exportado');
+  igual(registro.selos.length, 0, 'nenhum dos dois deveria falhar');
+  console.log('  OK dois cliques, um documento, nenhum erro');
+}
+
+console.log('\n== offscreen que nunca responde ==');
+{
+  // não pode travar para sempre: desiste, avisa, e segue viva
+  const { registro, simular } = await carregar();
+  await simular.instalar();
+  simular.definirPagina(JSON_API, 'Página');
+  simular.offscreenDemora(999999);
+
+  registrado.length = 0;
+  const t0 = Date.now();
+  await simular.clicar('auto', { selectionText: JSON_API });
+  const levou = Date.now() - t0;
+
+  igual(registro.downloads.length, 0, 'não deveria baixar nada');
+  igual(registro.selos[0], 'erro', 'deveria acender o selo de erro');
+  ok(levou < 3000, `deveria ter desistido rápido (levou ${levou}ms)`);
+  ok(registrado.some((l) => l.includes('não respondeu a tempo')),
+    'a desistência deveria aparecer no botão "Erros" do cartão, via console.error');
+  console.log(`  OK desistiu em ${levou}ms, sinalizou e registrou`);
 }
 
 console.log('\n== clique no ícone abre as opções ==');
