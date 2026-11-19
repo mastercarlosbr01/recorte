@@ -1,11 +1,21 @@
 /**
- * Ícones provisórios, desenhados na grade de pixels.
+ * Ícones da extensão.
  *
- * São marcas de recorte: dois cantos em L opostos, como os que delimitam uma
- * área a ser cortada, com um traço ciano no meio. A forma foi escolhida por
- * sobreviver a 16px — nessa escala não cabe desenho, só silhueta.
+ * O desenho: uma página com o canto cortado e três linhas de texto, a do
+ * meio em ciano. É a frase da extensão em forma — "a seleção virou
+ * arquivo". A silhueta de documento foi escolhida por ser a forma mais
+ * reconhecível que existe a 16px, onde não cabe desenho, só contorno.
  *
- * Trocar por arte de verdade antes de publicar.
+ * Duas alternativas foram desenhadas e descartadas: um bloco de seleção
+ * com alças, que lia como balão de conversa e perdia as alças abaixo de
+ * 32px, e marcas de recorte, bonitas e abstratas demais — dizem "cortar",
+ * não dizem "arquivo".
+ *
+ * As formas são descritas em coordenadas de 0 a 1, então a mesma descrição
+ * serve para 16 e para 512 sem reescrever nada. E cada pixel de saída
+ * amostra 8x8 pontos dentro de si, virando a cobertura em transparência:
+ * sem isso a borda arredondada vira degrau e o traço fino some justamente
+ * no tamanho que mais importa.
  *
  * Rodar: node scripts/gerar-icones.mjs
  */
@@ -17,12 +27,14 @@ import { fileURLToPath } from 'node:url';
 const RAIZ = join(dirname(fileURLToPath(import.meta.url)), '..');
 const DESTINO = join(RAIZ, 'assets');
 
-const NAVY = [15, 23, 42, 255];
-const CLARO = [230, 237, 246, 255];
-const CIANO = [6, 182, 212, 255];
-const VAZIO = [0, 0, 0, 0];
+const NAVY = [15, 23, 42];
+const CLARO = [230, 237, 246];
+const CIANO = [6, 182, 212];
 
-// ------------------------------------------------------------- PNG cru
+const TAMANHOS = [16, 32, 48, 128];
+const AMOSTRAS = 8;
+
+// --------------------------------------------------------------- PNG cru
 
 const TABELA = (() => {
   const t = new Int32Array(256);
@@ -53,12 +65,12 @@ function png(lado, pixels) {
   const ihdr = Buffer.alloc(13);
   ihdr.writeUInt32BE(lado, 0);
   ihdr.writeUInt32BE(lado, 4);
-  ihdr[8] = 8;
-  ihdr[9] = 6;
+  ihdr[8] = 8; // 8 bits por canal
+  ihdr[9] = 6; // RGBA
 
   const linhas = [];
   for (let y = 0; y < lado; y++) {
-    const linha = Buffer.alloc(1 + lado * 4);
+    const linha = Buffer.alloc(1 + lado * 4); // o byte 0 é o filtro "nenhum"
     for (let x = 0; x < lado; x++) linha.set(pixels[y][x], 1 + x * 4);
     linhas.push(linha);
   }
@@ -71,55 +83,97 @@ function png(lado, pixels) {
   ]);
 }
 
-// ------------------------------------------------------------- desenho
+// ------------------------------------------------------------ formas 0..1
+
+/**
+ * Retângulo de cantos arredondados.
+ *
+ * Ordena as coordenadas antes de usar: uma versão anterior aceitava só
+ * x0 < x1, e qualquer forma descrita de trás para frente simplesmente não
+ * aparecia — sem erro, sem aviso, só ausente no desenho.
+ */
+function retangulo(ax, ay, bx, by, r = 0) {
+  const x0 = Math.min(ax, bx), x1 = Math.max(ax, bx);
+  const y0 = Math.min(ay, by), y1 = Math.max(ay, by);
+  return (x, y) => {
+    if (x < x0 || x > x1 || y < y0 || y > y1) return false;
+    if (r <= 0) return true;
+    const dx = Math.min(x - x0, x1 - x);
+    const dy = Math.min(y - y0, y1 - y);
+    if (dx >= r || dy >= r) return true;
+    return (r - dx) ** 2 + (r - dy) ** 2 <= r * r;
+  };
+}
+
+/** Triângulo, pelo sinal do produto vetorial nos três lados. */
+function triangulo(ax, ay, bx, by, cx, cy) {
+  return (x, y) => {
+    const s = (px, py, qx, qy) => (qx - px) * (y - py) - (qy - py) * (x - px);
+    const d1 = s(ax, ay, bx, by);
+    const d2 = s(bx, by, cx, cy);
+    const d3 = s(cx, cy, ax, ay);
+    return !((d1 < 0 || d2 < 0 || d3 < 0) && (d1 > 0 || d2 > 0 || d3 > 0));
+  };
+}
+
+const menos = (a, b) => (x, y) => a(x, y) && !b(x, y);
+
+// ----------------------------------------------------------------- desenho
+
+/** A página, com o canto superior direito cortado. */
+const pagina = menos(
+  retangulo(0.26, 0.17, 0.74, 0.83, 0.05),
+  triangulo(0.60, 0.13, 0.78, 0.13, 0.78, 0.33)
+);
+
+const CAMADAS = [
+  { cor: NAVY, forma: retangulo(0.02, 0.02, 0.98, 0.98, 0.22) },
+  { cor: CLARO, forma: pagina },
+  { cor: NAVY, forma: retangulo(0.345, 0.40, 0.655, 0.445) },
+  // a linha destacada é mais grossa que as outras: é ela que carrega a ideia
+  { cor: CIANO, forma: retangulo(0.345, 0.50, 0.655, 0.575) },
+  { cor: NAVY, forma: retangulo(0.345, 0.635, 0.56, 0.68) },
+];
 
 function desenhar(lado) {
-  const u = lado / 16;
-  const px = (n) => Math.round(n * u);
-  const esp = Math.max(1, Math.round(u)); // espessura do traço
-
   const tela = Array.from({ length: lado }, () =>
-    Array.from({ length: lado }, () => VAZIO.slice())
+    Array.from({ length: lado }, () => [0, 0, 0, 0])
   );
 
-  const pintar = (x0, y0, x1, y1, cor) => {
-    for (let y = y0; y < y1; y++)
-      for (let x = x0; x < x1; x++)
-        if (x >= 0 && x < lado && y >= 0 && y < lado) tela[y][x] = cor.slice();
-  };
-
-  // fundo com cantos cortados, sem antialias: borda suave a 16px vira cinza
-  const r = px(3);
   for (let y = 0; y < lado; y++) {
     for (let x = 0; x < lado; x++) {
-      const dx = Math.min(x, lado - 1 - x);
-      const dy = Math.min(y, lado - 1 - y);
-      const dentro = dx >= r || dy >= r || (r - dx) ** 2 + (r - dy) ** 2 <= r * r;
-      tela[y][x] = dentro ? NAVY.slice() : VAZIO.slice();
+      const destino = tela[y][x];
+
+      for (const { cor, forma } of CAMADAS) {
+        let dentro = 0;
+        for (let sy = 0; sy < AMOSTRAS; sy++) {
+          for (let sx = 0; sx < AMOSTRAS; sx++) {
+            const px = (x + (sx + 0.5) / AMOSTRAS) / lado;
+            const py = (y + (sy + 0.5) / AMOSTRAS) / lado;
+            if (forma(px, py)) dentro++;
+          }
+        }
+        if (dentro === 0) continue;
+
+        const a = dentro / (AMOSTRAS * AMOSTRAS);
+        const aDestino = destino[3] / 255;
+        const aFinal = a + aDestino * (1 - a);
+        for (let i = 0; i < 3; i++) {
+          destino[i] = Math.round((cor[i] * a + destino[i] * aDestino * (1 - a)) / aFinal);
+        }
+        destino[3] = Math.round(aFinal * 255);
+      }
     }
   }
-
-  const m = px(4);        // margem dos cantos
-  const braco = px(4);    // comprimento de cada braço do L
-
-  // canto superior esquerdo
-  pintar(m, m, m + braco, m + esp, CLARO);
-  pintar(m, m, m + esp, m + braco, CLARO);
-
-  // canto inferior direito
-  const f = lado - m;
-  pintar(f - braco, f - esp, f, f, CLARO);
-  pintar(f - esp, f - braco, f, f, CLARO);
-
-  // traço ciano na diagonal central, a marca da extensão
-  pintar(px(6), px(7), px(10), px(9), CIANO);
 
   return tela;
 }
 
 mkdirSync(DESTINO, { recursive: true });
-for (const lado of [16, 32, 48, 128]) {
-  writeFileSync(join(DESTINO, `icone-${lado}.png`), png(lado, desenhar(lado)));
+for (const lado of TAMANHOS) {
+  const arquivo = join(DESTINO, `icone-${lado}.png`);
+  writeFileSync(arquivo, png(lado, desenhar(lado)));
   console.log(`  assets/icone-${lado}.png`);
 }
-console.log('\n  provisórios — trocar por arte antes de publicar');
+console.log('\n  confira o de 16 em tamanho real: se você não distingue o que é,');
+console.log('  o ícone não serve, por melhor que esteja a 128.');

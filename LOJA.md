@@ -172,7 +172,7 @@ porque não há o que declarar além do "nada sai da máquina".
 
 ## Antes de enviar
 
-- [ ] Arte definitiva no lugar dos ícones gerados por script
+- [x] Ícone definitivo — página com linha destacada, aprovado em 19/11/2026
 - [ ] `npm run check` verde
 - [ ] `npm run empacotar` — ele roda a verificação antes e se recusa a empacotar se algo falhar
 - [ ] Os doze casos de `tests/pagina-de-teste.html` rodados na versão empacotada, não só na descompactada

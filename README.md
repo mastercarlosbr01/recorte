@@ -100,7 +100,17 @@ Sem dependências. Node puro, sem framework de teste, sem bundler.
 `chrome://extensions` → modo desenvolvedor → **Carregar sem compactação** →
 apontar para a raiz deste repositório.
 
+## Ícones
+
+Uma página com o canto cortado e três linhas de texto, a do meio em ciano: a
+frase da extensão em forma. São desenhados por `scripts/gerar-icones.mjs`, em
+coordenadas de 0 a 1, com cada pixel amostrando 8×8 pontos — sem isso a borda
+arredondada vira degrau e o traço fino some a 16px, que é o tamanho que decide.
+
+Para trocar por arte feita à mão, entregue um PNG quadrado de 1024px e rode
+`npm run icone -- "caminho/arte.png"`; a redução é feita em etapas, o que
+preserva a forma muito melhor que um salto direto.
+
 ## Estado
 
-Versão 0.1.0, não publicada. Os ícones em `assets/` são provisórios, gerados por
-script — trocar por arte antes de qualquer publicação.
+Versão 0.1.0, não publicada.
