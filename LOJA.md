@@ -5,7 +5,12 @@ Os campos curtos (nome e descrição breve) **não se escrevem aqui**: eles saem
 estourar o limite da loja. O que está neste arquivo é o que o painel pede e o
 código não tem como guardar.
 
-Estado: **v0.1.0, não publicada.** Nada foi enviado.
+Estado: **v0.1.0, enviada para análise em 19/11/2026.**
+
+    ID na loja:  lngoibjkhghlnjnkhdpemkgheomdcjmd
+    Listagem:    https://chrome.google.com/webstore/detail/lngoibjkhghlnjnkhdpemkgheomdcjmd
+
+A listagem só responde depois da aprovação.
 
 ---
 
