@@ -27,6 +27,11 @@
     "default_title": "Recorte"
   },
 
+  "options_ui": {
+    "page": "src/options/options.html",
+    "open_in_tab": false
+  },
+
   "commands": {
     "exportar-automatico": {
       "suggested_key": {

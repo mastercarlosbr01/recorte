@@ -25,5 +25,38 @@
   "comandoExportar": {
     "message": "Export the selection in automatic mode",
     "description": "Descrição do atalho, vista em chrome://extensions/shortcuts"
+  },
+  "opcoesTitulo": {
+    "message": "Recorte"
+  },
+  "opcoesSubtitulo": {
+    "message": "Exports the page selection as a ready-formatted file."
+  },
+  "opcoesAtalhoTitulo": {
+    "message": "Keyboard shortcut"
+  },
+  "opcoesAtalhoDescricao": {
+    "message": "Exports the selection in automatic mode, without opening the right-click menu."
+  },
+  "opcoesAtalhoAtivo": {
+    "message": "active"
+  },
+  "opcoesAtalhoSemTecla": {
+    "message": "no key"
+  },
+  "opcoesAtalhoConflito": {
+    "message": "The suggested combination probably already belongs to another extension. Chrome does not warn you when that happens — it simply leaves the command without a key."
+  },
+  "opcoesBotaoAlterar": {
+    "message": "Choose the shortcut in Chrome"
+  },
+  "opcoesPorQue": {
+    "message": "The change happens on a Chrome page. No extension can set its own shortcut, and that is by design: it stops any of them from taking your keys without you seeing it."
+  },
+  "opcoesLocalTitulo": {
+    "message": "Everything happens here"
+  },
+  "opcoesLocalTexto": {
+    "message": "No network calls, no external libraries, no telemetry. The extension reads the page only at the moment you trigger the export, and the file is produced on your machine."
   }
 }

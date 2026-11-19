@@ -1,0 +1,102 @@
+/*
+ * A tela abre embutida no cartão de chrome://extensions, numa caixa estreita
+ * e sem rolagem confortável. Então: uma coluna, pouco texto, nada que
+ * precise de espaço horizontal.
+ */
+
+:root {
+  --fundo: #ffffff;
+  --texto: #1e293b;
+  --suave: #64748b;
+  --borda: #e2e8f0;
+  --caixa: #f8fafc;
+  --destaque: #0891b2;
+  --aviso: #b45309;
+  --aviso-fundo: #fffbeb;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fundo: #0f172a;
+    --texto: #e2e8f0;
+    --suave: #94a3b8;
+    --borda: #1e293b;
+    --caixa: #1e293b;
+    --destaque: #22d3ee;
+    --aviso: #fbbf24;
+    --aviso-fundo: #292014;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  padding: 24px 20px 32px;
+  background: var(--fundo);
+  color: var(--texto);
+  font: 14px/1.6 system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+main { max-width: 520px; margin: 0 auto; }
+
+h1 { font-size: 20px; margin: 0 0 2px; }
+h2 { font-size: 14px; margin: 0 0 12px; letter-spacing: 0.01em; }
+
+.sub { margin: 0 0 24px; color: var(--suave); }
+
+.cartao {
+  border: 1px solid var(--borda);
+  border-radius: 10px;
+  padding: 18px;
+  margin: 0 0 16px;
+  background: var(--caixa);
+}
+
+.linha {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+kbd {
+  font: 600 14px/1 ui-monospace, "Cascadia Code", Consolas, monospace;
+  padding: 8px 12px;
+  border: 1px solid var(--borda);
+  border-bottom-width: 3px;
+  border-radius: 6px;
+  background: var(--fundo);
+  color: var(--texto);
+  white-space: nowrap;
+}
+
+/* sem tecla atribuída: o estado que o usuário precisa enxergar de longe */
+kbd.vazio {
+  color: var(--aviso);
+  background: var(--aviso-fundo);
+  border-color: var(--aviso);
+  font-style: italic;
+}
+
+#estado { color: var(--suave); font-size: 13px; }
+#estado.alerta { color: var(--aviso); }
+
+.explica { margin: 0 0 14px; color: var(--suave); font-size: 13px; }
+.explica:last-child { margin-bottom: 0; }
+
+button {
+  font: inherit;
+  font-weight: 600;
+  color: var(--fundo);
+  background: var(--destaque);
+  border: 0;
+  border-radius: 7px;
+  padding: 9px 16px;
+  cursor: pointer;
+  margin-bottom: 14px;
+}
+
+button:hover { filter: brightness(1.08); }
+button:focus-visible { outline: 2px solid var(--texto); outline-offset: 2px; }

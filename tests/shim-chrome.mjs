@@ -21,6 +21,7 @@ export function criarShim({ idioma = 'pt-BR' } = {}) {
     urlsVivas: new Set(),
     urlsRevogadas: [],
     offscreenCriados: 0,
+    opcoesAbertas: 0,
     execucoes: [],
   };
 
@@ -30,6 +31,7 @@ export function criarShim({ idioma = 'pt-BR' } = {}) {
     onMenuClicked: [],
     onDownloadChanged: [],
     onCommand: [],
+    onIconeClicado: [],
   };
 
   const MENSAGENS = {
@@ -61,6 +63,8 @@ export function criarShim({ idioma = 'pt-BR' } = {}) {
       onInstalled: { addListener: (f) => ouvintes.onInstalled.push(f) },
       onStartup: { addListener: (f) => ouvintes.onStartup.push(f) },
       get lastError() { return ultimoErro; },
+
+      async openOptionsPage() { registro.opcoesAbertas++; },
 
       // o service worker fala com o offscreen por aqui
       async sendMessage(m) {
@@ -154,6 +158,7 @@ export function criarShim({ idioma = 'pt-BR' } = {}) {
     action: {
       async setBadgeText({ text }) { if (text) registro.selos.push(text); },
       async setBadgeBackgroundColor() {},
+      onClicked: { addListener: (f) => ouvintes.onIconeClicado.push(f) },
     },
   };
 
@@ -173,6 +178,11 @@ export function criarShim({ idioma = 'pt-BR' } = {}) {
     },
 
     /** Dispara o atalho de teclado. */
+    /** Clique no ícone da barra de ferramentas. */
+    clicarIcone(aba = { id: 1 }) {
+      return disparar(ouvintes.onIconeClicado, aba);
+    },
+
     atalho(comando = 'exportar-automatico', aba = { id: 1, title: frames[0].titulo }) {
       return disparar(ouvintes.onCommand, comando, aba);
     },

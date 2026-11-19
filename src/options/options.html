@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Recorte</title>
+  <!--
+    Estilo e script em arquivos separados por obrigação, não por gosto: a CSP
+    do manifest declara script-src 'self' e style-src 'self', então bloco
+    <style> e atributo style= não executam aqui dentro.
+  -->
+  <link rel="stylesheet" href="options.css">
+</head>
+<body>
+  <main>
+    <h1 data-i18n="opcoesTitulo"></h1>
+    <p class="sub" data-i18n="opcoesSubtitulo"></p>
+
+    <section class="cartao">
+      <h2 data-i18n="opcoesAtalhoTitulo"></h2>
+
+      <div class="linha">
+        <kbd id="tecla"></kbd>
+        <span id="estado"></span>
+      </div>
+
+      <p class="explica" data-i18n="opcoesAtalhoDescricao"></p>
+
+      <button id="abrir" type="button"></button>
+      <p class="explica" data-i18n="opcoesPorQue"></p>
+    </section>
+
+    <section class="cartao">
+      <h2 data-i18n="opcoesLocalTitulo"></h2>
+      <p class="explica" data-i18n="opcoesLocalTexto"></p>
+    </section>
+  </main>
+
+  <script src="options.js"></script>
+</body>
+</html>

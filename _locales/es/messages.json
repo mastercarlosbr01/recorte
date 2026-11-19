@@ -25,5 +25,38 @@
   "comandoExportar": {
     "message": "Exportar la selección en modo automático",
     "description": "Descrição do atalho, vista em chrome://extensions/shortcuts"
+  },
+  "opcoesTitulo": {
+    "message": "Recorte"
+  },
+  "opcoesSubtitulo": {
+    "message": "Exporta la selección de la página como archivo ya formateado."
+  },
+  "opcoesAtalhoTitulo": {
+    "message": "Atajo de teclado"
+  },
+  "opcoesAtalhoDescricao": {
+    "message": "Exporta la selección en modo automático, sin pasar por el menú del botón derecho."
+  },
+  "opcoesAtalhoAtivo": {
+    "message": "activo"
+  },
+  "opcoesAtalhoSemTecla": {
+    "message": "ninguna tecla"
+  },
+  "opcoesAtalhoConflito": {
+    "message": "La combinación sugerida probablemente ya pertenece a otra extensión. Chrome no avisa cuando eso ocurre: simplemente deja el comando sin tecla."
+  },
+  "opcoesBotaoAlterar": {
+    "message": "Elegir el atajo en Chrome"
+  },
+  "opcoesPorQue": {
+    "message": "El cambio ocurre en una página del propio Chrome. Ninguna extensión puede definir su propio atajo, y es a propósito: así ninguna te quita teclas sin que lo veas."
+  },
+  "opcoesLocalTitulo": {
+    "message": "Todo ocurre aquí"
+  },
+  "opcoesLocalTexto": {
+    "message": "Ninguna llamada de red, ninguna biblioteca externa, ninguna telemetría. La extensión solo lee la página en el instante en que activas la exportación, y el archivo se genera en tu máquina."
   }
 }

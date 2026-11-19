@@ -420,5 +420,18 @@ console.log('\n== comando desconhecido ==');
   console.log('  OK');
 }
 
+console.log('\n== clique no ícone abre as opções ==');
+{
+  // sem popup (o selo precisa do action livre), o ícone não fazia nada;
+  // quem acaba de instalar clica nele procurando onde mexer
+  const { registro, simular } = await carregar();
+  await simular.instalar();
+  await simular.clicarIcone();
+
+  igual(registro.opcoesAbertas, 1, 'clicar no ícone deveria abrir as opções');
+  igual(registro.downloads.length, 0, 'clicar no ícone não exporta nada');
+  console.log('  OK');
+}
+
 console.log(falhas === 0 ? '\nTUDO VERDE\n' : `\n${falhas} FALHA(S)\n`);
 process.exit(falhas === 0 ? 0 : 1);

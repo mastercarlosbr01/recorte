@@ -267,6 +267,17 @@ chrome.contextMenus.onClicked.addListener((info, aba) => {
 });
 
 /**
+ * Clique no ícone abre as opções.
+ *
+ * Sem popup — o selo precisa do `action` livre — o ícone não fazia nada ao
+ * ser clicado, o que é um beco sem saída para quem acabou de instalar e
+ * procura onde mexer. A tela de opções é onde o atalho se vê.
+ */
+chrome.action.onClicked.addListener(() => {
+  chrome.runtime.openOptionsPage().catch((e) => console.error('[Recorte]', e));
+});
+
+/**
  * Atalho de teclado: sempre no modo automático.
  *
  * Quem usa atalho quer o caminho mais curto; escolher o tipo é justamente
