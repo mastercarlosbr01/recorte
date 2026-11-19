@@ -150,14 +150,23 @@ As três declarações obrigatórias, todas marcáveis com sinceridade:
 
 ### URL da política de privacidade
 
-**A confirmar antes de enviar.** O campo é obrigatório quando a extensão trata
-dado pessoal ou sensível, e o Recorte não trata — mas a política de 2026
-reforçou as exigências de divulgação, e vale ler a página oficial em vez de
-deduzir pelo caso da Ficta.
+```
+https://mastercarlosbr01.github.io/recorte-privacidade/
+```
 
-Se for exigido, o caminho mais barato é o mesmo que a Ficta usou: um repositório
-público no GitHub servindo uma página pelo GitHub Pages. O conteúdo é curto,
-porque não há o que declarar além do "nada sai da máquina".
+O campo veio **obrigatório** no painel, com asterisco, mesmo com todas as caixas
+de coleta desmarcadas. As fontes de terceiros divergiam sobre isso; o formulário
+não.
+
+Publicada em repositório próprio
+([recorte-privacidade](https://github.com/mastercarlosbr01/recorte-privacidade)),
+separado do código de propósito: a página precisa continuar no ar enquanto a
+extensão estiver publicada, independentemente do que aconteça com o repositório
+da extensão, e o histórico de alterações de uma política deve ser verificável
+por quem a leu antes.
+
+Ela aponta para o código-fonte como forma de conferir a declaração — o que só
+funciona com o repositório público. Foi por isso que o `recorte` foi aberto.
 
 ---
 
@@ -176,8 +185,8 @@ porque não há o que declarar além do "nada sai da máquina".
 - [ ] `npm run check` verde
 - [ ] `npm run empacotar` — ele roda a verificação antes e se recusa a empacotar se algo falhar
 - [ ] Os doze casos de `tests/pagina-de-teste.html` rodados na versão empacotada, não só na descompactada
-- [ ] Capturas de tela
-- [ ] Confirmar a exigência de política de privacidade na página oficial da loja
+- [x] Capturas de tela, blocos promocionais e ícone da loja
+- [x] Política de privacidade publicada e no ar — resolvido pelo formulário, que a exige
 - [ ] Conferir se a política de 2026 muda algo para a **Ficta**, que já está publicada
 
 ## Capturas de tela
