@@ -87,6 +87,42 @@ for (const [regra, padrao, porque] of PROIBIDOS) {
   if (!achou) passou(regra);
 }
 
+// -------------------------------------- o que o service worker não suporta
+
+/**
+ * Import dinâmico no service worker.
+ *
+ * A especificação de Service Workers proíbe `import()` depois da avaliação
+ * inicial, e o Chrome responde com
+ *   TypeError: import() is disallowed on ServiceWorkerGlobalScope
+ * derrubando a operação inteira. No Node isso é perfeitamente legal, então
+ * nenhum teste pega — esta regra existe porque o defeito já aconteceu uma
+ * vez e custou caro de achar.
+ *
+ * Vale só para o worker e para o que ele importa. O documento offscreen é
+ * uma página normal, onde import dinâmico é permitido.
+ */
+const SEM_IMPORT_DINAMICO = [
+  join(RAIZ, 'src', 'background'),
+  join(RAIZ, 'src', 'core'),
+];
+
+const DINAMICO = /(^|[^.\w$])import\s*\(/;
+let achouDinamico = false;
+
+for (const dir of SEM_IMPORT_DINAMICO) {
+  if (!existsSync(dir)) continue;
+  for (const arquivo of listarArquivos(dir)) {
+    semComentarios(readFileSync(arquivo, 'utf8')).split('\n').forEach((linha, i) => {
+      if (!DINAMICO.test(linha)) return;
+      achouDinamico = true;
+      falhar('sem import() dinâmico no service worker', `${relative(RAIZ, arquivo)}:${i + 1}`,
+        `${linha.trim().slice(0, 90)}\n      motivo: o Chrome lança TypeError; use import estático no topo`);
+    });
+  }
+}
+if (!achouDinamico) passou('sem import() dinâmico no service worker (o Chrome proíbe)');
+
 // ---------------------------------------------------------------- manifest
 
 console.log('\n== manifest ==');

@@ -7,6 +7,19 @@
  * download só pode ser disparado daqui.
  */
 
+/**
+ * Importado estaticamente, e não com `await import(...)` lá embaixo onde é
+ * usado: a especificação de Service Workers proíbe import dinâmico, e o
+ * Chrome responde com
+ *
+ *   TypeError: import() is disallowed on ServiceWorkerGlobalScope
+ *              by the HTML specification.
+ *
+ * Isso não aparece no Node, onde import dinâmico é legal — foi assim que a
+ * suíte inteira passou por cima do defeito sem encostar nele.
+ */
+import { montarNome } from '../core/nome.js';
+
 const RAIZ = 'recorte-raiz';
 const MODOS = [
   { id: 'auto', rotulo: 'menuAuto' },
@@ -60,7 +73,7 @@ async function montarMenuAgora() {
  */
 let fila = Promise.resolve();
 function montarMenu() {
-  fila = fila.then(montarMenuAgora).catch((e) => console.debug('[Recorte]', e));
+  fila = fila.then(montarMenuAgora).catch((e) => console.error('[Recorte] menu:', e));
   return fila;
 }
 
@@ -189,11 +202,10 @@ chrome.contextMenus.onClicked.addListener(async (info, aba) => {
     });
 
     if (!r || r.erro) {
-      console.debug('[Recorte]', r?.erro);
+      console.error('[Recorte] offscreen não formatou:', r?.erro ?? '(sem resposta)');
       return sinalizar('erro', '#dc2626');
     }
 
-    const { montarNome } = await import('../core/nome.js');
     const idDownload = await chrome.downloads.download({
       url: r.url,
       filename: montarNome(titulo, r.extensao),
@@ -205,7 +217,11 @@ chrome.contextMenus.onClicked.addListener(async (info, aba) => {
     // pediu .json ou .xml e saiu .txt: avisa sem pedir permissão nova
     if (!r.atendido) await sinalizar('TXT', '#b45309');
   } catch (erro) {
-    console.debug('[Recorte]', erro);
+    // console.error, não console.debug: só o error aparece no botão "Erros"
+    // do cartão em chrome://extensions. Com debug, a falha fica invisível
+    // sem abrir o DevTools no nível Verbose — foi exatamente isso que
+    // tornou o primeiro defeito tão caro de diagnosticar.
+    console.error(`[Recorte] falha ao exportar (modo ${modo}):`, erro);
     await sinalizar('erro', '#dc2626');
   }
 });
