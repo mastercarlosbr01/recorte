@@ -31,6 +31,13 @@ function confirmarXML(texto) {
   }
 }
 
+/** O tipo declarado tem que combinar com a extensão pedida. */
+const TIPO_MIME = {
+  json: 'application/json',
+  xml: 'application/xml',
+  txt: 'text/plain',
+};
+
 /** URLs vivas, para poder revogar depois que o download começa. */
 const urls = new Set();
 
@@ -41,8 +48,13 @@ chrome.runtime.onMessage.addListener((mensagem, _remetente, responder) => {
     try {
       const r = prepararExportacao(mensagem.texto, mensagem.modo, { confirmarXML });
 
-      // UTF-8 sem BOM: o Blob não escreve BOM, e o type leva o charset
-      const blob = new Blob([r.texto], { type: `text/plain;charset=utf-8` });
+      // UTF-8 sem BOM: o Blob não escreve BOM, e o type leva o charset.
+      //
+      // O tipo acompanha a extensão, e isso não é cosmético: o Chrome
+      // confere o nome do arquivo contra o tipo declarado no download e
+      // reescreve a extensão quando os dois discordam. Declarar text/plain
+      // para tudo era pedir .json e receber .txt.
+      const blob = new Blob([r.texto], { type: `${TIPO_MIME[r.extensao] ?? TIPO_MIME.txt};charset=utf-8` });
       const url = URL.createObjectURL(blob);
       urls.add(url);
 
